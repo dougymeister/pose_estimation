@@ -1,0 +1,7 @@
+Person,Joint,Angle(deg),Keypoint_B_x,Keypoint_B_y
+1,Left Shoulder-Left Elbow-Left Wrist,145.4721294079724,190.0323,136.1146
+1,Right Shoulder-Right Elbow-Right Wrist,131.66969389443136,192.18901,134.27998
+1,Left Hip-Left Knee-Left Ankle,133.771955029787,236.03476,206.05348
+1,Right Hip-Right Knee-Right Ankle,115.09803957800263,203.0883,184.2477
+1,Left Shoulder-Left Hip-Left Knee,113.12400136702848,251.46742,135.56178
+1,Right Shoulder-Right Hip-Right Knee,90.69358070772282,241.1879,131.95894
