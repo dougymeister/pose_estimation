@@ -1,0 +1,367 @@
+{
+  "knee_angle_left_11_13_15": {
+    "label": "Left Knee Angle",
+    "road": {
+      "endurance": {
+        "min": 140,
+        "max": 150,
+        "units": "\u00b0",
+        "explanation": "Left knee angle affects power and joint safety. Adjust saddle height if outside range."
+      },
+      "casual": {
+        "min": 135,
+        "max": 155,
+        "units": "\u00b0",
+        "explanation": "Casual riders may prefer a slightly more upright knee angle for comfort."
+      },
+      "intermediate": {
+        "min": 138,
+        "max": 152,
+        "units": "\u00b0",
+        "explanation": "Intermediate fit allows balance between efficiency and comfort."
+      }
+    },
+    "commuter": {
+      "default": {
+        "min": 135,
+        "max": 155,
+        "units": "\u00b0",
+        "explanation": "Commuter bike fit allows broader knee angle for upright posture."
+      }
+    },
+    "mountain": {
+      "default": {
+        "min": 130,
+        "max": 150,
+        "units": "\u00b0",
+        "explanation": "Mountain bike knee angles are slightly more compressed to allow maneuverability."
+      }
+    },
+    "key": "knee_angle_left_11_13_15"
+  },
+  "knee_angle_right_12_14_16": {
+    "label": "Right Knee Angle",
+    "road": {
+      "endurance": {
+        "min": 140,
+        "max": 150,
+        "units": "\u00b0",
+        "explanation": "Right knee angle should match left side for symmetry and comfort."
+      },
+      "casual": {
+        "min": 135,
+        "max": 155,
+        "units": "\u00b0",
+        "explanation": "Casual riders may prefer a slightly more upright knee angle for comfort."
+      },
+      "intermediate": {
+        "min": 138,
+        "max": 152,
+        "units": "\u00b0",
+        "explanation": "Intermediate fit allows balance between efficiency and comfort."
+      }
+    },
+    "commuter": {
+      "default": {
+        "min": 135,
+        "max": 155,
+        "units": "\u00b0",
+        "explanation": "Commuter bike fit allows broader knee angle for upright posture."
+      }
+    },
+    "mountain": {
+      "default": {
+        "min": 130,
+        "max": 150,
+        "units": "\u00b0",
+        "explanation": "Mountain bike knee angles are slightly more compressed to allow maneuverability."
+      }
+    },
+    "key": "knee_angle_right_12_14_16"
+  },
+  "hip_angle_left_5_11_13": {
+    "label": "Left Hip Angle",
+    "road": {
+      "endurance": {
+        "min": 90,
+        "max": 110,
+        "units": "\u00b0",
+        "explanation": "Left hip angle helps assess upper body compression and comfort."
+      },
+      "casual": {
+        "min": 95,
+        "max": 120,
+        "units": "\u00b0",
+        "explanation": "Casual riders benefit from a more open hip angle."
+      },
+      "intermediate": {
+        "min": 92,
+        "max": 112,
+        "units": "\u00b0",
+        "explanation": "Intermediate riders benefit from a moderate lean."
+      }
+    },
+    "commuter": {
+      "default": {
+        "min": 95,
+        "max": 115,
+        "units": "\u00b0",
+        "explanation": "Commuter setups favor comfort and visibility."
+      }
+    },
+    "mountain": {
+      "default": {
+        "min": 85,
+        "max": 105,
+        "units": "\u00b0",
+        "explanation": "Mountain bike fits allow more flex for aggressive terrain."
+      }
+    },
+    "key": "hip_angle_left_5_11_13"
+  },
+  "hip_angle_right_6_12_14": {
+    "label": "Right Hip Angle",
+    "road": {
+      "endurance": {
+        "min": 90,
+        "max": 110,
+        "units": "\u00b0",
+        "explanation": "Right hip angle should balance with the left for efficient pedaling."
+      },
+      "casual": {
+        "min": 95,
+        "max": 120,
+        "units": "\u00b0",
+        "explanation": "Casual riders benefit from a more open hip angle."
+      },
+      "intermediate": {
+        "min": 92,
+        "max": 112,
+        "units": "\u00b0",
+        "explanation": "Intermediate riders benefit from a moderate lean."
+      }
+    },
+    "commuter": {
+      "default": {
+        "min": 95,
+        "max": 115,
+        "units": "\u00b0",
+        "explanation": "Commuter setups favor comfort and visibility."
+      }
+    },
+    "mountain": {
+      "default": {
+        "min": 85,
+        "max": 105,
+        "units": "\u00b0",
+        "explanation": "Mountain bike fits allow more flex for aggressive terrain."
+      }
+    },
+    "key": "hip_angle_right_6_12_14"
+  },
+  "torso_angle_left_11_5_6": {
+    "label": "Left Torso Angle",
+    "road": {
+      "endurance": {
+        "min": 140,
+        "max": 175,
+        "units": "\u00b0",
+        "explanation": "Left torso angle helps assess upright posture and comfort for endurance rides."
+      }
+    },
+    "key": "torso_angle_left_11_5_6"
+  },
+  "torso_angle_right_12_6_5": {
+    "label": "Right Torso Angle",
+    "road": {
+      "endurance": {
+        "min": 140,
+        "max": 175,
+        "units": "\u00b0",
+        "explanation": "Right torso angle should mirror the left for balanced posture and power transfer."
+      }
+    },
+    "key": "torso_angle_right_12_6_5"
+  },
+  "shoulder_angle_left_11_5_7": {
+    "label": "Left Shoulder Angle",
+    "road": {
+      "endurance": {
+        "min": 80,
+        "max": 100,
+        "units": "\u00b0",
+        "explanation": "Left shoulder angle affects upper body stability and comfort. Adjust reach or handlebar height if outside range."
+      }
+    },
+    "key": "shoulder_angle_left_11_5_7"
+  },
+  "shoulder_angle_right_12_6_8": {
+    "label": "Right Shoulder Angle",
+    "road": {
+      "endurance": {
+        "min": 80,
+        "max": 100,
+        "units": "\u00b0",
+        "explanation": "Right shoulder angle should match the left for symmetry and balance. Consider handlebar adjustments if needed."
+      }
+    },
+    "key": "shoulder_angle_right_12_6_8"
+  },
+  "back_angle_left_11_5_6": {
+    "label": "Left Back Angle",
+    "road": {
+      "endurance": {
+        "min": 160,
+        "max": 175,
+        "units": "\u00b0",
+        "explanation": "Left back angle reflects spinal alignment. A flatter back may indicate better aerodynamic posture."
+      }
+    },
+    "key": "back_angle_left_11_5_6"
+  },
+  "back_angle_right_12_6_5": {
+    "label": "Right Back Angle",
+    "road": {
+      "endurance": {
+        "min": 160,
+        "max": 175,
+        "units": "\u00b0",
+        "explanation": "Right back angle should align with the left to support a consistent and aerodynamic riding posture."
+      }
+    },
+    "key": "back_angle_right_12_6_5"
+  },
+  "leg_length_left_11_15": {
+    "label": "Left Leg Length",
+    "road": {
+      "endurance": {
+        "min": 50,
+        "max": 55,
+        "units": "in",
+        "explanation": "Leg extension distance affects saddle height and pedal reach."
+      }
+    },
+    "key": "leg_length_left_11_15"
+  },
+  "leg_length_right_12_16": {
+    "label": "Right Leg Length",
+    "road": {
+      "endurance": {
+        "min": 50,
+        "max": 55,
+        "units": "in",
+        "explanation": "Ensure symmetric leg extension between left and right legs."
+      }
+    },
+    "key": "leg_length_right_12_16"
+  },
+  "knee_length_left_13_15": {
+    "label": "Left Knee to Ankle",
+    "road": {
+      "endurance": {
+        "min": 25,
+        "max": 30,
+        "units": "in",
+        "explanation": "Helps confirm lower leg proportion and knee extension."
+      }
+    },
+    "key": "knee_length_left_13_15"
+  },
+  "knee_length_right_14_16": {
+    "label": "Right Knee to Ankle",
+    "road": {
+      "endurance": {
+        "min": 25,
+        "max": 30,
+        "units": "in",
+        "explanation": "Use to validate knee extension and ankle alignment."
+      }
+    },
+    "key": "knee_length_right_14_16"
+  },
+  "arm_reach_distance_left_5_9": {
+    "label": "Left Arm Reach",
+    "road": {
+      "endurance": {
+        "min": 30,
+        "max": 35,
+        "units": "in",
+        "explanation": "Left arm reach influences handlebar position and comfort."
+      }
+    },
+    "key": "arm_reach_distance_left_5_9"
+  },
+  "arm_reach_distance_right_6_10": {
+    "label": "Right Arm Reach",
+    "road": {
+      "endurance": {
+        "min": 30,
+        "max": 35,
+        "units": "in",
+        "explanation": "Right arm reach should match left for upper body symmetry."
+      }
+    },
+    "key": "arm_reach_distance_right_6_10"
+  },
+  "reach_distance_left_5_7": {
+    "label": "Left Hand Reach",
+    "road": {
+      "endurance": {
+        "min": 20,
+        "max": 30,
+        "units": "in",
+        "explanation": "Measures distance to handlebar. Key for posture setup."
+      }
+    },
+    "key": "reach_distance_left_5_7"
+  },
+  "reach_distance_right_6_8": {
+    "label": "Right Hand Reach",
+    "road": {
+      "endurance": {
+        "min": 20,
+        "max": 30,
+        "units": "in",
+        "explanation": "Right reach should mirror the left. Adjust bars or stem if not."
+      }
+    },
+    "key": "reach_distance_right_6_8"
+  },
+    "arm_reach_distance_horizon_left_5_9": {
+    "label": "Left Arm Horizon Reach",
+    "road": {
+      "endurance": {
+        "min": 30,
+        "max": 35,
+        "units": "in",
+        "explanation": "Horizontal projection of arm reach influences handlebar position and comfort."
+      }
+    },
+    "key": "arm_reach_distance_horizon_left_5_9"
+  },
+  "arm_reach_distance_horizon_right_6_10": {
+    "label": "Right Arm Horizon Reach",
+    "road": {
+      "endurance": {
+        "min": 30,
+        "max": 35,
+        "units": "in",
+        "explanation": "Horizontal projection of arm reach should match left for upper body symmetry."
+      }
+    },
+    "key": "arm_reach_distance_horizon_right_6_10"
+  },
+  "saddle_to_bar_distance_1_0": {
+    "label": "Saddle to Handlebar Distance",
+    "road": {
+      "endurance": {
+        "min": 40,
+        "max": 50,
+        "units": "in",
+        "explanation": "Horizontal distance between saddle and handlebar affects bike reach and aerodynamic posture."
+      }
+    },
+    "key": "saddle_to_bar_distance_1_0"
+  }
+}
+
