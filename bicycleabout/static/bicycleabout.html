@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pose Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+      <style>
+
+
+    :root {
+      --arc-color:   #FFD700;  /* gold */
+      --arc-opacity: 0.8;
+      --arc-dash:    4,2;
+
+      --reach-color: #FFA500;
+      --horizon-color: #1E90FF;
+      --leader-color: rgba(255,255,255,0.7);
+      --leader-dash: 2,2;
+    }
+
+/* styles related to feedback table click and row, and matching pose metric key displayed in canvas */
+
+/* 1) Only lines & arcs get the thick highlight */
+line.highlighted-overlay,
+path.highlighted-overlay {
+  stroke: #00FFFF !important;
+  stroke-width: 4 !important;
+  opacity: 1 !important;
+}
+
+/* 2) Do *not* override text or its background—so no fill:none there */
+text.highlighted-overlay,
+rect.highlighted-overlay {
+  /* No stroke/fill overrides here,
+     so your text stays exactly as before */
+  opacity: 1 !important; /* just ensure it’s visible */
+}
+
+/* feedbackTable.css or in a <style> block */
+#feedbackTable tbody tr.selected-row {
+  background-color: rgba(255, 235, 150, 0.5); /* pale yellow */
+}
+
+
+.layer-btn {
+  background: #444;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  margin: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.layer-btn.active-overlay {
+  background: #555;
+}
+.layer-btn:hover {
+  background: #444;
+}
+
+    .label-container {
+      position: relative;
+      display: inline-block;
+    }
+    #poseImage {
+      max-width: 100%;
+      display: block;
+    }
+    .label {
+      position: absolute;
+      background: rgba(255,255,255,0.8);
+      padding: 3px 6px;
+      border: 1px solid #333;
+      border-radius: 4px;
+      cursor: move;
+      font-size: 14px;
+    }
+svg.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+  </style>
+
+    <style>
+
+        #overlayContainer {
+  position: relative;
+}
+
+#overlayLegend {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 12px;
+  padding: 8px;
+  border-radius: 4px;
+  line-height: 1.4;
+  pointer-events: none; /* so clicks go through */
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.legend-item:last-child {
+  margin-bottom: 0;
+}
+
+.legend-item svg {
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+
+
+        body {
+          font-family: sans-serif;
+          margin: 0;
+          padding: 0;
+          background: #f2f2f2;
+        }
+            .header {
+          position: sticky;
+          top: 0;
+          z-index: 999;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 10px 20px;
+          background-color: #f5f5f5;
+          border-bottom: 1px solid #ccc;
+        }
+            .dashboard {
+          max-width: 900px;
+          margin: auto;
+          background: white;
+          padding: 20px;
+        }
+        .tabs {
+          display: flex;
+          border-bottom: 2px solid #ccc;
+          background: #eee;
+        }
+        .tabs button {
+          flex: 1;
+          padding: 10px;
+          background: #eee;
+          border: none;
+          border-right: 1px solid #ccc;
+          font-weight: bold;
+          cursor: pointer;
+        }
+        .tabs button.active {
+          background-color: #4CAF50;
+          color: white;
+        }
+        .tab-content {
+          display: none;
+          padding: 20px;
+          background: white;
+        }
+        .tab-content.active {
+          display: block;
+        }
+        #analyzeImage {
+          max-width: 100%;
+          display: none;
+          margin-top: 12px;
+        }
+        .form-section {
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          padding: 12px;
+          margin-top: 6px;
+          background-color: #fafafa;
+        }
+        .modern-select {
+          min-width: 160px;
+          padding: 8px 10px;
+          border: 1px solid #aaa;
+          border-radius: 6px;
+          background-color: #fff;
+          font-size: 14px;
+          appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23333' fill='none' stroke-width='2'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 10px center;
+          background-size: 12px;
+        }
+
+        #profileMenu {
+          width: 200px; /* Or any width you prefer */
+        }
+
+    </style>
+
+    <style>
+
+        .tab-button {
+          padding: 10px 16px;
+          font-size: 16px;
+          font-weight: 500;
+          background-color: #eaeaea;
+          border: 1px solid #ccc;
+          border-bottom: none;
+          border-radius: 6px 6px 0 0;
+          cursor: pointer;
+          margin-right: 4px;
+        }
+
+        .tab-button.active {
+          background-color: #d0f0d0;
+          border-bottom: 1px solid #f5f5f5;
+        }
+
+        .tab-button:hover {
+          background-color: #ddd;
+        }
+
+        .pose-metric-btn {
+          padding: 8px 14px;
+          font-size: 14px;
+          border: 1px solid #ccc;
+          background-color: #f0f0f0;
+          border-radius: 6px;
+          cursor: pointer;
+          text-align: left;
+        }
+
+        .pose-metric-btn:hover {
+          background-color: #e0e0e0;
+        }
+.overlay-button-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+.overlay-btn {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: none;
+  border-radius: 6px;
+  background-color: #eeeeee;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.overlay-btn:hover {
+  background-color: #dddddd;
+}
+
+.overlay-btn.active {
+  background-color: #4caf50;
+  color: white;
+}
+    </style>
+    <style>
+
+        body {
+          font-family: sans-serif;
+          background-color: #f2f2f2;
+          margin: 0;
+          padding: 20px;
+        }
+        .container {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          max-width: 1000px;
+          margin: auto;
+        }
+        .card {
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          padding: 20px;
+        }
+        .tab-header {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 10px;
+          margin-bottom: 10px;
+        }
+        .tab-button {
+          padding: 10px 16px;
+          border: none;
+          border-radius: 8px;
+          background-color: #4CAF50;
+          color: white;
+          cursor: pointer;
+        }
+        .tab-button:hover {
+          background-color: #45a049;
+        }
+        .hidden {
+          display: none;
+        }
+        .preview {
+          max-width: 100%;
+          border: 1px solid #ccc;
+          border-radius: 10px;
+        }
+
+            .process-btn {
+      padding: 10px 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .process-btn:hover {
+      background-color: #45a049;
+    }
+
+#labelOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+}
+
+.draggable-label-bg {
+  fill: rgba(0,0,0,0.6);
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
+}
+
+  .draggable-label {
+    position: absolute;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    pointer-events: auto;
+    cursor: move;
+  }
+
+        .active-overlay {
+    background-color: #007BFF;
+    color: white;
+    border: 2px solid #0056b3;
+}
+</style>
+
+</head>
+<body>
+
+
+<div style="position: sticky; top: 0; z-index: 999; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #f5f5f5; border-bottom: 1px solid #ccc;">
+    <div style="display: flex; align-items: center;">
+        <img alt="Logo" src="https://img.icons8.com/ios-filled/50/bicycle.png"
+             style="height: 32px; margin-right: 12px;"/>
+        <span style="font-size: 20px; font-weight: bold; color: #333;">Cyclist Pose Analyzer</span>
+    </div>
+    <div class="menu" style="position: relative;">
+        <button aria-label="User Profile" onclick="toggleMenu()"
+                style="padding: 8px 12px; border: none; background: none; cursor: pointer;">
+            <i class="fas fa-cog fa-lg" style="color: #333;" title="User Profile"></i>
+        </button>
+        <div id="profileMenu"
+             style="display: none; position: absolute; right: 0; background-color: white; border: 1px solid #ccc; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); margin-top: 5px; z-index: 10;">
+            <div onclick="openForm('riderForm')" style="padding: 10px; cursor: pointer;">Rider Info</div>
+            <div onclick="openForm('bikeForm')" style="padding: 10px; cursor: pointer;">Bicycle Info</div>
+            <div onclick="openForm('historyForm')" style="padding: 10px; cursor: pointer;">Prior Images & Analysis</div>
+              <div onclick="openUnitDialog()" style="padding: 10px; cursor: pointer;">Set Unit of Measure</div>
+            <!--
+            <div style="margin-top: 12px;">
+                <label for="unitSelector"><strong>Preferred Unit:</strong></label><br>
+                <select id="unitSelector" onchange="handleUnitChange(this)">
+                  <option value="cm">Centimeters (cm)</option>
+                  <option value="in">Inches (in)</option>
+                </select>
+            </div>
+            -->
+        </div>
+    </div>
+</div>
+
+      <!-- Modal dialog -->
+<div id="unitDialog" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+     background-color: white; border: 1px solid #ccc; border-radius: 8px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 100;">
+  <h3>Preferred Unit</h3>
+  <label><input type="radio" name="unitChoice" value="cm"> Centimeters (cm)</label><br>
+  <label><input type="radio" name="unitChoice" value="in"> Inches (in)</label><br><br>
+  <button onclick="saveUnitSelection()">Save</button>
+  <button onclick="closeUnitDialog()">Close</button>
+</div>
+
+
+<div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; background-color: #f5f5f5; border-bottom: 1px solid #ccc;">
+
+</div>
+
+
+<div class="dashboard">
+    <div class="tabs">
+        <button class="active" onclick="showTab(0)">1. Select Pose Type</button>
+        <button onclick="showTab(1)">2. Upload Image</button>
+        <button onclick="showTab(2)">3. Analyze Pose</button>
+    </div>
+
+    <div class="tab-content active">
+
+        <h3>Step 1: Select Pose Type</h3>
+        <div style="display: flex; gap: 20px; align-items: flex-start;">
+            <div style="display: flex; flex-direction: column;padding-right:50px;">
+                <label><input checked name="pose" onchange="updatePoseThumbnail()" type="radio" value="seated">
+                    Seated</label>
+                <label><input name="pose" onchange="updatePoseThumbnail()" type="radio" value="standing">
+                    Standing</label>
+                <label><input name="pose" onchange="updatePoseThumbnail()" type="radio" value="dynamic"> Dynamic</label>
+                <label><input name="pose" onchange="updatePoseThumbnail()" type="radio" value="random"> Random</label>
+            </div>
+            <img id="poseThumbnail" src="/images/bicycle_seated_demo.webp"
+                 style="border: 1px solid lightgray"
+                 width="200"/>
+        </div>
+        <br>
+        <button onclick="showTab(1)"  class="process-btn">Next</button>
+
+    </div>
+
+    <div class="tab-content">
+
+        <h3>Step 2: Upload or Capture Image</h3>
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <input id="poseFile" accept="image/*,video/*" src="/images/seated_lady.jpg" onchange="handleFileUpload(event)" type="file">
+            <img id="uploadThumb" style="display:none; border: 1px solid lightgray;" width="200"/>
+        </div>
+        <br>
+        <button class="process-btn" onclick="showTab(2)" >Next</button>
+
+    </div>
+
+    <div class="tab-content">
+        <h3>Step 3: Analyze Pose</h3>
+        <div class="form-section">
+            <p>The settings below will be used for analysis. Adjust as needed and click "Process" to continue.</p>
+              <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+
+                <div style="display: flex; flex-direction: column;">
+                  <label for="bikeType" style="font-weight: bold;">Bicycle Type</label>
+                  <select class="modern-select" id="bikeType">
+                    <option>Road</option>
+                    <option>MTB</option>
+                    <option>Touring</option>
+                    <option>Cruiser</option>
+                    <option>Electric</option>
+                  </select>
+                </div>
+
+                <div style="display: flex; flex-direction: column;">
+                  <label for="ridingStyle" style="font-weight: bold;">Riding Style</label>
+                  <select class="modern-select" id="ridingStyle">
+                    <option>Casual</option>
+                    <option>Intermediate</option>
+                    <option>Aggressive</option>
+                  </select>
+                </div>
+
+                  <button onclick="openReferenceSizeDialog()">Enter Reference Size</button>
+
+                <div style="margin-left: auto;">
+                  <button onclick="handleProcessAndAnalyze()" style="padding: 10px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: bold;">Process</button>
+                 <!-- <button onclick="submitForProcessing()" style="padding: 10px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: bold;">Process</button>-->
+
+                </div>
+
+              </div>
+            </div>
+        <div class="container">
+            <div class="card">
+                <div id="overlayContainer" style="position: relative; display: inline-block;">
+
+                  <img id="analyzeImage" src="" style="width: 100%; display: block;" onload="syncSvgSize()" />
+                    <!-- new canvas for our reach–horizon overlay -->
+                  <canvas id="overlayCanvas"  style="position: absolute; top: 0; left: 0; pointer-events: none;" ></canvas>
+                  <svg id="svgOverlay" style="position: absolute; top: 0; left: 0; pointer-events: all;"></svg>
+                </div>
+
+                <!--<div style="position: relative; display: inline-block;">
+                   <canvas id="overlayCanvas" style="position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
+                   <svg id="leaderLines" class="overlay"></svg>
+                <div id="labelOverlay"></div>
+                </div>
+            -->
+                <div style="margin-top: 10px;">
+                  <label><input type="checkbox" id="toggleKeypoints"  onchange="renderOverlayLabels(window.latestPoseMetricsSubset, window.latestPoseKeypoints)" checked> Show Pose Keypoints</label>
+                  <label><input type="checkbox" id="toggleConnections"  onchange="renderOverlayLabels(window.latestPoseMetricsSubset, window.latestPoseKeypoints)" checked style="margin-left: 20px;"> Show Pose Connections</label>
+                    <label>
+                      <input type="checkbox" id="toggleOnlyRelated"  onchange="renderOverlayLabels(window.latestPoseMetricsSubset, window.latestPoseKeypoints)" checked>
+                        Show Only Related Points
+                    </label>
+                    <label style="margin-left: 20px;">
+                        <input type="checkbox" id="toggleArcPath" checked>  Show Arc Path
+                    </label>
+                </div>
+
+                                <br>
+                <div class="overlay-button-grid">
+                  <!--<button class="overlay-btn" id="btn-all_fit_points" onclick="applyOverlay('all_fit_points', this)">All Fit Points</button>-->
+                    <button class="overlay-btn" id="btn-analyze-all" onclick="analyzeAllLayers()">Analyze All</button>
+                  <button class="overlay-btn" id="btn-knee_angle" onclick="applyOverlay('knee_angle', this)">Knee Angle</button>
+                  <button class="overlay-btn" id="btn-hip_angle" onclick="applyOverlay('hip_angle', this)">Hip Angle</button>
+                  <button class="overlay-btn" id="btn-shoulder_angle" onclick="applyOverlay('shoulder_angle', this)">Shoulder Angle</button>
+                  <button class="overlay-btn" id="btn-arm_reach_distance" onclick="applyOverlay('arm_reach_distance', this)">Arm Reach Distance</button>
+                  <button class="overlay-btn" id="btn-torso_angle" onclick="applyOverlay('torso_angle', this)">Torso Angle</button>
+                  <button class="overlay-btn" id="btn-back_angle" onclick="applyOverlay('back_angle', this)">Back Angle</button>
+                  <button class="overlay-btn" id="btn-leg_length" onclick="applyOverlay('leg_length', this)">Leg Length</button>
+                  <button class="overlay-btn" id="btn-saddle_to_bar_distance" onclick="applyOverlay('saddle_to_bar_distance', this)">Saddle to Bar Distance</button>
+                  <button id="clearSelectionsBtn" class="overlay-btn" onclick="clearSelections()">Clear Selections</button>
+                </div>
+                <button id="exportBtn">Export</button>
+            </div>
+          </div>
+
+        <h3>Analysis & Performance Feedback</h3>
+
+        <!-- Feedback Filters + Table -->
+        <div class="feedback-controls" style="margin-bottom: 1rem;">
+          <label for="filterMetric">Metric:</label>
+          <select id="filterMetric">
+            <option value="">All</option>
+          </select>
+
+          <label for="filterBike">Bicycle Type:</label>
+          <select id="filterBike">
+            <option value="road">Road</option>
+            <option value="mountain">Mountain</option>
+            <option value="gravel">Gravel</option>
+          </select>
+
+          <label for="filterStyle">Riding Style:</label>
+          <select id="filterStyle">
+            <option value="endurance">Endurance</option>
+            <option value="sprinting">Sprinting</option>
+            <option value="recreational">Recreational</option>
+          </select>
+
+          <button onclick="loadFeedback()">Update Feedback</button>
+        </div>
+
+        <table id="feedbackTable" class="display" style="width:100%">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Current</th>
+              <th>Target</th>
+              <th>Status</th>
+              <th>Explanation</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <textarea rows="4" style="width: 100%;"></textarea>
+
+    </div>
+</div> <!-- end dashboard -->
+
+<!-- Popups -->
+<div class="modal" id="riderForm"
+     style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%, -20%); background:#fff; border:1px solid #ccc; border-radius:8px; padding:20px; z-index:100;">
+    <h3>Rider Info</h3>
+    <label>Height (cm): <input type="number"/></label><br><br>
+    <label>Weight (kg): <input type="number"/></label><br><br>
+    <label>Riding Style:
+        <select>
+            <option>Casual</option>
+            <option>Intermediate</option>
+            <option>Endurance</option>
+        </select>
+    </label><br><br>
+    <button onclick="closeForm('riderForm')">Close</button>
+</div>
+
+<div class="modal" id="bikeForm"
+     style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%, -20%); background:#fff; border:1px solid #ccc; border-radius:8px; padding:20px; z-index:100;">
+    <h3>Bicycle Info</h3>
+    <label>Bicycle Type:
+        <select>
+            <option>Road</option>
+            <option>MTB</option>
+            <option>Touring</option>
+            <option>Cruiser</option>
+            <option>Electric</option>
+        </select>
+    </label><br><br>
+    <button onclick="closeForm('bikeForm')">Close</button>
+</div>
+
+<div class="modal" id="historyForm"
+     style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%, -20%); background:#fff; border:1px solid #ccc; border-radius:8px; padding:20px; z-index:100;">
+    <h3>Prior Images & Analysis</h3>
+    <p>(This section can be used to display previous uploads and analysis results.)</p>
+    <button onclick="closeForm('historyForm')">Close</button>
+</div>
+
+<!-- feedback /feedback data -->
+<!-- Include jQuery and DataTables (once) -->
+<link rel="stylesheet" charset="utf-8" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<script charset="utf-8" src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script charset="utf-8" src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+
+
+<!-- Your feedback script -->
+<script src="/static/js/feedbackTable.js"></script>
+<script src="/static/js/exportResults.js"></script>
+
+
+<!-- JS INJECTION POINT -->
+<script>
+window.onload = () => {
+const userLocale = navigator.language || navigator.userLanguage;
+window.measurementUnit = userLocale.startsWith("en-US") ? "in" : "cm";
+window.measurementUnit = "in";  // or "cm"       // hardcode vs use userLocale
+
+  // Initialize canvas context
+  const overlayCanvas = document.getElementById("overlayCanvas");
+  if (overlayCanvas) {
+    const overlayCtx = overlayCanvas.getContext("2d");
+    window.overlayCtx = overlayCtx;
+  }
+
+  // Initialize tab buttons
+  document.querySelectorAll(".tabs button").forEach((btn, i) => {
+    tabButtons.push(btn);
+    tabContents.push(document.querySelectorAll(".tab-content")[i]);
+  });
+};
+
+function syncSvgSize() {
+  const img = document.getElementById("analyzeImage");
+  const svg = document.getElementById("svgOverlay");
+  svg.setAttribute("width", img.clientWidth);
+  svg.setAttribute("height", img.clientHeight);
+}
+window.addEventListener("resize", syncSvgSize);
+
+// any time the user flips arc‐path on/off, redraw the overlays
+document
+  .getElementById("toggleArcPath")
+  .addEventListener("change", () => {
+    renderOverlayLabels(
+      window.latestPoseMetricsSubset || {},
+      window.latestPoseKeypoints || []
+    );
+  });
+
+
+    const SKELETON_EDGES = [
+  // Left leg (hip→knee→ankle)
+  [5, 11], // shoulder→hip (optional)
+  [11, 13], // hip→knee
+  [13, 15], // knee→ankle
+
+  // Right leg (hip→knee→ankle)
+  [6, 12], // shoulder→hip (optional)
+  [12, 14], // hip→knee
+  [14, 16], // knee→ankle
+
+  // Left arm (shoulder→elbow→wrist)
+  [5, 7],  // shoulder→elbow
+  [7, 9],  // elbow→wrist
+
+  // Right arm (shoulder→elbow→wrist)
+  [6, 8],  // shoulder→elbow
+  [8, 10], // elbow→wrist
+
+  // Torso & head
+  [0, 1],  // nose→left eye
+  [1, 2],  // left eye→right eye
+  [2, 3],  // right eye→left ear
+  [3, 4],  // left ear→right ear
+  [0, 5],  // nose→left shoulder
+  [0, 6],  // nose→right shoulder
+];
+
+
+
+function renderOverlayLabels(metricsByLayer = {}, keypoints = []) {
+  const svg = document.getElementById("svgOverlay");
+  // clear old graphics
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  const img = document.getElementById("analyzeImage");
+  const { width: imgW, height: imgH } = img.getBoundingClientRect();
+  const margin = 10, lineHeight = 18;
+
+  // read your checkboxes
+  const showKeypoints   = document.getElementById("toggleKeypoints").checked;
+  const showConnections = document.getElementById("toggleConnections").checked;
+  const onlyRelated     = document.getElementById("toggleOnlyRelated").checked;
+
+  // helper: point is valid if within image and non-zero. Otherwise had one pt/line to top-left origin
+  function isValidKP(pt) {
+    return Array.isArray(pt)
+      && pt.length === 2
+      && !isNaN(pt[0]) && !isNaN(pt[1])
+      && pt[0] > 0 && pt[1] > 0
+      && pt[0] < imgW && pt[1] < imgH;
+  }
+
+  // build the set of related point indices, if requested
+  let relatedSet = new Set();
+  if (onlyRelated) {
+    Object.values(metricsByLayer).forEach(m => {
+      (m.distances || []).forEach(ent => ent.points?.forEach(i => relatedSet.add(i)));
+      (m.angles    || []).forEach(ent => ent.points?.forEach(i => relatedSet.add(i)));
+    });
+  }
+
+  // 1) DRAW DISTANCE SEGMENTS, skipping exact duplicates
+  const drawnSegs = new Set();
+  Object.values(metricsByLayer).forEach(metrics => {
+    (metrics.distances || []).forEach(ent => {
+      (ent.line_segments || []).forEach(seg => {
+        // skip if we're drawing only related and neither end is related
+        if (onlyRelated && !ent.points.some(idx => relatedSet.has(idx))) return;
+
+        // build a unique key for this segment+style
+        const segKey = `${seg[0]},${seg[1]}->${seg[2]},${seg[3]}|${ent.style||"solid"}`;
+        if (drawnSegs.has(segKey)) return;
+        drawnSegs.add(segKey);
+
+        // draw the line
+        const [x1, y1, x2, y2] = seg;
+        const line = document.createElementNS(svg.namespaceURI, "line");
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
+        line.setAttribute("stroke", ent.color || "orange");
+        line.setAttribute("stroke-width", ent.thickness || 3); // uses server json value if populated
+        if (ent.style === "dashed") {
+          line.setAttribute("stroke-dasharray", "5,5");
+        }
+        svg.appendChild(line);
+
+        if(ent)
+            line.dataset.metricKey = ent.key; // dy -0703 - metric key
+      });
+    });
+  });
+
+  // 2) DRAW POSE CONNECTIONS
+  if (showConnections) {
+
+    SKELETON_EDGES.forEach(([i, j]) => {
+      const p1 = keypoints[i], p2 = keypoints[j]; // dont want strange 'origin' line or pose pt drawn
+      if (!isValidKP(p1) || !isValidKP(p2)) return;
+
+      if (!keypoints[i] || !keypoints[j]) return;
+      //if (onlyRelated && (!relatedSet.has(i) || !relatedSet.has(j))) return;
+      if (onlyRelated && !(relatedSet.has(i) || relatedSet.has(j))) return;
+      const [x1, y1] = keypoints[i];
+      const [x2, y2] = keypoints[j];
+      const conn = document.createElementNS(svg.namespaceURI, "line");
+      conn.setAttribute("x1", x1);
+      conn.setAttribute("y1", y1);
+      conn.setAttribute("x2", x2);
+      conn.setAttribute("y2", y2);
+      conn.setAttribute("stroke", "#0f0");
+      conn.setAttribute("stroke-width", 2);
+      conn.setAttribute("class", "pose-connection");
+
+      svg.appendChild(conn);
+
+    });
+  }
+
+  // 3) DRAW POSE KEYPOINTS
+  if (showKeypoints) {
+    keypoints.forEach((pt, idx) => {
+      if (!isValidKP(pt)) return;
+
+      if (!pt) return;
+      if (onlyRelated && !relatedSet.has(idx)) return;
+      const [x, y] = pt;
+      const circ = document.createElementNS(svg.namespaceURI, "circle");
+      circ.setAttribute("cx", x);
+      circ.setAttribute("cy", y);
+      circ.setAttribute("r", 3);
+      circ.setAttribute("fill", "#f00");
+      circ.setAttribute("class", "pose-keypoint");
+      svg.appendChild(circ);
+
+    });
+  }
+
+   // 3b) DRAW ANGLE ARC PATHS
+  const showArc = document.getElementById("toggleArcPath").checked;
+  drawAngleArcs(svg, metricsByLayer, keypoints, showArc);
+
+
+  // 4) BUILD LABELS, skipping duplicates
+  const labels = [];
+  const seenLabels = new Set();
+  let id = 0;
+
+  Object.values(metricsByLayer).forEach(metrics => {
+    (metrics.distances || []).forEach(ent => {
+      // skip if onlyRelated and not relevant
+      if (onlyRelated && !ent.points.some(idx => relatedSet.has(idx))) return;
+
+      // dedupe by midpoint + both unit labels
+      const mk = ent.midpoint || [0, 0];
+      const labelKey = `${mk[0]},${mk[1]}|${ent.label_cm}|${ent.label_in}`;
+      if (seenLabels.has(labelKey)) return;
+      seenLabels.add(labelKey);
+
+      // pick display text
+      const unit = window.measurementUnit === "in" ? "in" : "cm";
+      const text = unit === "in"
+        ? (ent.label_in || ent.label_cm)
+        : (ent.label_cm || ent.label_in);
+
+      const [anchorX, anchorY] = mk;
+      const side = anchorX < imgW / 2 ? "left" : "right";
+
+      labels.push({
+        anchorX,
+        anchorY,
+        text,
+        color: ent.color || "orange",
+        side,
+        id: id++,
+
+        metricKey: ent.key
+      });
+
+    });
+
+    (metrics.angles || []).forEach(ent => {
+      const midIdx = ent.points?.[1];
+      if (midIdx == null) return;
+      if (onlyRelated && !relatedSet.has(midIdx)) return;
+      const [ax, ay] = keypoints[midIdx] || [];
+      if (ax == null) return;
+
+      const labelKey = `${ax},${ay}|${ent.label}`;
+      if (seenLabels.has(labelKey)) return;
+      seenLabels.add(labelKey);
+
+      const side = ax < imgW / 2 ? "left" : "right";
+      labels.push({
+        anchorX: ax,
+        anchorY: ay,
+        text: ent.label,
+        color: "lime",
+        side,
+        id: id++,
+
+         metricKey: ent.key
+      });
+
+    });
+  });
+
+  // 5) STACK LABELS ON SIDES
+  ["left", "right"].forEach(side => {
+    let cursorY = margin;
+    labels
+      .filter(l => l.side === side)
+      .sort((a, b) => a.anchorY - b.anchorY)
+      .forEach(l => {
+        const desiredY = Math.min(Math.max(l.anchorY, margin), imgH - margin);
+        l.labelY = Math.max(desiredY, cursorY);
+        cursorY = l.labelY + lineHeight;
+        l.labelX = side === "left" ? margin : imgW - margin;
+      });
+  });
+
+  // 6) RENDER DRAGGABLE LABELS & LEADER LINES
+  labels.forEach(l => {
+    const txt = document.createElementNS(svg.namespaceURI, "text");
+    txt.setAttribute("id", `label-${l.id}`);
+    txt.setAttribute("class", "draggable-label");
+    txt.setAttribute("x", l.labelX);
+    txt.setAttribute("y", l.labelY);
+    txt.setAttribute("fill", "white");
+    txt.setAttribute("font-family", "sans-serif");
+    txt.setAttribute("font-size", "14");
+    txt.setAttribute("font-weight", "bold");
+    txt.setAttribute("text-anchor", l.side === "right" ? "end" : "start");
+    txt.textContent = l.text;
+    svg.appendChild(txt);
+
+if (l.metricKey) {
+  txt.dataset.metricKey    = l.metricKey;
+}
+
+
+    const bb = txt.getBBox(), pad = 4;
+    const rw = bb.width + pad * 2, rh = bb.height + pad;
+    const rx = l.side === "left" ? l.labelX - pad : l.labelX - bb.width - pad;
+    const ry = l.labelY - bb.height;
+
+    const rect = document.createElementNS(svg.namespaceURI, "rect");
+    rect.setAttribute("id", `rect-${l.id}`);
+    rect.setAttribute("class","draggable-label-bg");
+    rect.setAttribute("x", rx);
+    rect.setAttribute("y", ry);
+    rect.setAttribute("width", rw);
+    rect.setAttribute("height", rh);
+    rect.setAttribute("fill", "black");
+    rect.setAttribute("rx", "4");
+    rect.setAttribute("ry", "4");
+    svg.insertBefore(rect, txt);
+if (l.metricKey) {
+  rect.dataset.metricKey   = l.metricKey;
+}
+
+    // draw leader from anchor to label
+    const edgeX = l.side === "left" ? rx + rw : rx;
+    const edgeY = ry + rh / 2;
+    const leader = document.createElementNS(svg.namespaceURI, "line");
+    leader.setAttribute("id", `line-${l.id}`);
+    leader.setAttribute("x1", l.anchorX);
+    leader.setAttribute("y1", l.anchorY);
+    leader.setAttribute("x2", edgeX);
+    leader.setAttribute("y2", edgeY);
+    leader.setAttribute("stroke", l.color);
+    leader.setAttribute("stroke-width", "2");
+
+    // 0703 - updated leader settings to look better/less obtrusive. Replaces above since added after.
+    //const leaderColor = rootStyles.getPropertyValue('--leader-color').trim();
+    //const leaderDash  = rootStyles.getPropertyValue('--leader-dash').trim();
+    //leader.setAttribute("stroke",leaderColor); // same as
+    leader.setAttribute("stroke", "#FFF");
+    leader.setAttribute("stroke-opacity", "0.72");
+    leader.setAttribute("stroke-width", "1");
+    //leader.setAttribute("stroke-dasharray", getComputedStyle(root).getPropertyValue('--leader-dash')); // same as
+    leader.setAttribute("stroke-dasharray", "2,2");
+
+    svg.appendChild(leader);
+if (l.metricKey) {
+  leader.dataset.metricKey = l.metricKey;
+}
+
+    // stash for drag handlers
+    txt.dataset.lineId = `line-${l.id}`;
+    txt.dataset.rectId = `rect-${l.id}`;
+    txt.dataset.side   = l.side;
+    txt.dataset.rw     = rw;
+    txt.dataset.rh     = rh;
+
+    // this increases leader line thickness while being dragged...for visibility
+    txt.addEventListener("mouseenter", () => {
+      const l = document.getElementById(txt.dataset.lineId);
+      l.setAttribute("stroke", "#FFF");
+      l.setAttribute("stroke-width", "3");
+    });
+    txt.addEventListener("mouseleave", () => {
+      const l = document.getElementById(txt.dataset.lineId);
+      l.setAttribute("stroke", "#FFF"); //txt.dataset.color);
+      l.setAttribute("stroke-width", "1"); // txt.dataset.thickness);
+    });
+
+  });
+
+  enableDragOnLabels();
+}
+
+
+function enableDragOnLabels() {
+  const svg = document.getElementById("svgOverlay");
+  let active = null;
+  let startX = 0, startY = 0;
+  let origTextX = 0, origTextY = 0;
+  let origRectX = 0, origRectY = 0;
+
+  svg.addEventListener("mousedown", e => {
+    const t = e.target;
+    if (t.tagName === "text" && t.classList.contains("draggable-label")) {
+      active = t;
+      startX = e.clientX;
+      startY = e.clientY;
+      origTextX = parseFloat(active.getAttribute("x"));
+      origTextY = parseFloat(active.getAttribute("y"));
+      const rect = document.getElementById(active.dataset.rectId);
+      origRectX = parseFloat(rect.getAttribute("x"));
+      origRectY = parseFloat(rect.getAttribute("y"));
+      e.preventDefault();
+    }
+  });
+
+  window.addEventListener("mousemove", e => {
+    if (!active) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    // 1) Move text
+    const newTextX = origTextX + dx;
+    const newTextY = origTextY + dy;
+    active.setAttribute("x", newTextX);
+    active.setAttribute("y", newTextY);
+
+    // 2) Move rect
+    const rect = document.getElementById(active.dataset.rectId);
+    const newRectX = origRectX + dx;
+    const newRectY = origRectY + dy;
+    rect.setAttribute("x", newRectX);
+    rect.setAttribute("y", newRectY);
+
+    // 3) Recompute leader‐line end
+    //    Use the rect’s current x,y,width,height and side.
+    const side = active.dataset.side;
+    const bw = parseFloat(rect.getAttribute("width"));
+    const bh = parseFloat(rect.getAttribute("height"));
+    const edgeX = side === "left" ? (newRectX + bw) : newRectX;
+    const edgeY = newRectY + bh / 2;
+
+    const line = document.getElementById(active.dataset.lineId);
+    line.setAttribute("x2", edgeX);
+    line.setAttribute("y2", edgeY);
+  });
+
+  window.addEventListener("mouseup", () => {
+    active = null;
+  });
+}
+
+
+
+
+
+
+function drawMetricLabel(svg, anchorX, anchorY, text, color, id, imgW, imgH) {
+  // decide offsets based on image quadrant
+  const offsetX = anchorX > imgW/2 ? -40 : 40;
+  const offsetY = anchorY < imgH/2 ? -30 : 30;
+  const x2 = anchorX + offsetX;
+  const y2 = anchorY + offsetY;
+
+  // 1) fixed leader line
+  const line = document.createElementNS(svg.namespaceURI, "line");
+  line.setAttribute("id", `line-${id}`);
+  line.setAttribute("x1", anchorX);
+  line.setAttribute("y1", anchorY);
+  line.setAttribute("x2", x2);
+  line.setAttribute("y2", y2);
+  line.setAttribute("stroke", color);
+  line.setAttribute("stroke-width", "2");
+  svg.appendChild(line);
+
+  // 2) draggable text
+  const label = document.createElementNS(svg.namespaceURI, "text");
+  label.setAttribute("class", "draggable-label");
+  label.setAttribute("id", `label-${id}`);
+  label.setAttribute("x", x2);
+  label.setAttribute("y", y2);
+  label.setAttribute("fill", color);
+  label.setAttribute("font-family", "sans-serif");
+  label.setAttribute("font-size", "12");
+  label.textContent = text;
+
+  // stash anchor and line-id for the drag handler
+  label.dataset.anchorX = anchorX;
+  label.dataset.anchorY = anchorY;
+  label.dataset.lineId = `line-${id}`;
+  svg.appendChild(label);
+}
+
+
+/*
+let selectedText = null;
+let offset = { x: 0, y: 0 };
+
+function startDrag(e) {
+  if (e.target.tagName !== "text") return;
+  selectedText = e.target;
+  offset.x = e.offsetX - parseFloat(selectedText.getAttribute("x"));
+  offset.y = e.offsetY - parseFloat(selectedText.getAttribute("y"));
+  svgOverlay.addEventListener("mousemove", drag);
+  svgOverlay.addEventListener("mouseup", endDrag);
+}
+
+function drag(e) {
+  if (!selectedText) return;
+  selectedText.setAttribute("x", e.offsetX - offset.x);
+  selectedText.setAttribute("y", e.offsetY - offset.y);
+}
+
+function endDrag() {
+  svgOverlay.removeEventListener("mousemove", drag);
+  svgOverlay.removeEventListener("mouseup", endDrag);
+  selectedText = null;
+}
+*/
+
+
+function displayLabels(labels) {
+
+  const overlayContainer = document.getElementById('labelOverlay');
+  const svg = document.getElementById('leaderLines');
+
+  overlayContainer.innerHTML = '';
+  svg.innerHTML = '';
+
+  labels.forEach((label, index) => {
+    const el = document.createElement('div');
+    el.className = 'draggable-label';
+const rawLabel = label.label || label.text || '';
+el.innerText = rawLabel;
+    el.style.left = `${label.midpoint[0] + 10}px`;  // offset label slightly from keypoint
+    el.style.top = `${label.midpoint[1] + 10}px`;
+
+    // Create SVG line (leader)
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", label.midpoint[0]);
+    line.setAttribute("y1", label.midpoint[1]);
+    line.setAttribute("x2", label.midpoint[0] + 10);
+    line.setAttribute("y2", label.midpoint[1] + 10);
+    line.setAttribute("stroke", "rgba(0,0,0,0.7)"); //"rgba(0,128,255,0.8)"); //"gray");
+    line.setAttribute("stroke-width", "2");
+    svg.appendChild(line);
+
+    // Enable dragging
+    let isDragging = false, offsetX = 0, offsetY = 0;
+
+    el.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      offsetX = e.offsetX;
+      offsetY = e.offsetY;
+      el.style.zIndex = 10;
+    });
+
+
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        const parentRect = overlayContainer.getBoundingClientRect();
+        const newX = e.clientX - parentRect.left - offsetX;
+        const newY = e.clientY - parentRect.top - offsetY;
+        el.style.left = `${newX}px`;
+        el.style.top = `${newY}px`;
+        line.setAttribute("x2", newX);
+        line.setAttribute("y2", newY);
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      el.style.zIndex = '';
+    });
+
+    overlayContainer.appendChild(el);
+  });
+}
+</script>
+
+<script>
+    let uploadedDataUrl = "";
+    let uploadedFile = null;
+let lastOverlayMode = "all_fit_points";
+let lastPoseType = "seated";
+    let processedImageUrl = "";
+    let isProcessed = false;
+
+    const tabButtons = [];
+    const tabContents = [];
+
+    function showTab(index) {
+      tabButtons.forEach((btn, i) => {
+        btn.classList.toggle("active", i === index);
+        tabContents[i].classList.toggle("active", i === index);
+      });
+
+      if (index === 2) {
+        const imgSrc = isProcessed ? processedImageUrl : uploadedDataUrl;
+        if (imgSrc) {
+          const analyzeImage = document.getElementById("analyzeImage");
+          analyzeImage.src = imgSrc;
+          analyzeImage.style.display = 'block';
+        }
+        const riderSel = document.querySelector('#riderForm select');
+        const bikeSel = document.querySelector('#bikeForm select');
+        if (riderSel) document.getElementById('ridingStyle').value = riderSel.value;
+        if (bikeSel) document.getElementById('bikeType').value = bikeSel.value;
+      }
+    }
+
+   function toggleMenu() {
+      const menu = document.getElementById('profileMenu');
+      menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function openForm(formId) {
+      closeAllForms();
+      document.getElementById(formId).style.display = 'block';
+      document.getElementById('profileMenu').style.display = 'none';
+    }
+
+    function closeForm(formId) {
+      document.getElementById(formId).style.display = 'none';
+    }
+
+    function closeAllForms() {
+      ['riderForm', 'bikeForm', 'historyForm'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+      });
+    }
+
+    window.onclick = function(event) {
+      if (!event.target.closest('button') && !event.target.closest('#profileMenu')) {
+        document.getElementById('profileMenu').style.display = 'none';
+      }
+    };
+
+    function updatePoseThumbnail() {
+      const thumbs = {
+        seated: "/images/bicycle_seated_demo.webp"
+      };
+      const selected = document.querySelector('input[name="pose"]:checked').value;
+      document.getElementById("poseThumbnail").src = thumbs[selected] || thumbs.seated;
+    }
+
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      uploadedFile = file;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        uploadedDataUrl = e.target.result;
+        const thumb = document.getElementById("uploadThumb");
+        thumb.src = uploadedDataUrl;
+        thumb.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
+
+    // NOT USED now - submitForProcessing()
+    function submitForProcessing() {
+    const fileInput = document.getElementById("poseFile");
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        alert("Please select a file before processing.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+    formData.append("context", "seated");
+    formData.append("layer", "all_fit_points");
+    formData.append("reference_object", "front_wheel");
+    formData.append("reference_size", "27");
+    formData.append("reference_unit", window.measurementUnit || "cm");
+
+    fetch("/annotate", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert("Annotation failed.");
+            return;
+        }
+
+        const imgUrl = `/media/${data.filename}`;
+        document.getElementById("analyzeImage").src = imgUrl;
+        window.latestPoseFilename = data.filename;
+        window.latestPoseMetrics = data.metrics;
+        renderOverlayLabels(window.latestPoseMetrics, window.latestKeypoints);
+        loadFeedback();
+    })
+    .catch(error => {
+        console.error("Annotation error:", error);
+    });
+}
+
+</script>
+
+  <script>
+      function extractFeedbackMetrics(entries) {
+  const result = {};
+  entries.forEach(entry => {
+    if ("angle_deg" in entry && Array.isArray(entry.points)) {
+      const [a, b, c] = entry.points;
+      result[`angle_${a}_${b}_${c}`] = parseFloat(entry.angle_deg.toFixed(1));
+    } else if ("distance" in entry && entry.distance?.value != null) {
+      const key = entry.name || `distance_${entry.points?.join("_")}`;
+      result[key] = parseFloat(entry.distance.value.toFixed(2));
+    }
+  });
+  return result;
+}
+
+
+
+// Global state
+let currentActiveButtons = new Set();
+
+function setButtonState(buttonId, active) {
+  const btn = document.getElementById(buttonId);
+  if (!btn) return;
+  if (active) {
+    btn.classList.add("active-overlay");
+    currentActiveButtons.add(buttonId);
+  } else {
+    btn.classList.remove("active-overlay");
+    currentActiveButtons.delete(buttonId);
+  }
+}
+
+function clearAllButtonStates() {
+  currentActiveButtons.forEach(btnId => {
+    setButtonState(btnId, false);
+  });
+  currentActiveButtons.clear();
+}
+
+
+function applyOverlay(layerName, buttonElement = null) {
+  const filename = window.latestPoseFilename;
+  if (!filename) {
+    alert("No processed image available.");
+    return;
+  }
+
+  if (!window.latestPoseMetrics) window.latestPoseMetrics = {};
+  if (!window.latestPoseMetricsSubset) window.latestPoseMetricsSubset = {};
+  if (!window.currentActiveButtons) window.currentActiveButtons = new Set();
+
+  const btnId = buttonElement?.id;
+
+  // Toggle OFF if already active
+  if (btnId && window.currentActiveButtons.has(btnId)) {
+    window.currentActiveButtons.delete(btnId);
+    buttonElement.classList.remove("active-overlay");
+
+    delete window.latestPoseMetrics[layerName];
+
+    // Rebuild the visible subset
+    const metricsSubset = {};
+    for (const activeBtnId of window.currentActiveButtons) {
+      const layer = activeBtnId.replace("btn-", "");
+      if (window.latestPoseMetrics[layer]) {
+        metricsSubset[layer] = window.latestPoseMetrics[layer];
+      }
+    }
+    window.latestPoseMetricsSubset = metricsSubset;
+
+    renderOverlayLabels(metricsSubset, window.latestPoseKeypoints);
+    loadFeedback();
+    return;
+  }
+
+  // Deactivate Analyze All if toggling individual layer
+  const analyzeAllBtn = document.getElementById("btn-analyze-all");
+  if (analyzeAllBtn) {
+    analyzeAllBtn.classList.remove("active-overlay");
+    window.currentActiveButtons.delete("btn-analyze-all");
+  }
+
+  // Activate the new button
+  if (btnId) {
+    window.currentActiveButtons.add(btnId);
+    buttonElement.classList.add("active-overlay");
+  }
+
+  // Fetch layer data
+  fetch(`/analyze?layer=${layerName}&filename=${filename}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.error || !data.labels || data.labels.length === 0) {
+        alert("No annotations found for this layer.");
+        return;
+      }
+
+      window.latestPoseMetrics[layerName] = data.metrics;
+      window.latestPoseKeypoints = data.keypoints || [];
+
+      // Rebuild subset from current active buttons
+      const metricsSubset = {};
+      for (const activeBtnId of window.currentActiveButtons) {
+        const layer = activeBtnId.replace("btn-", "");
+        if (window.latestPoseMetrics[layer]) {
+          metricsSubset[layer] = window.latestPoseMetrics[layer];
+        }
+      }
+
+      window.latestPoseMetricsSubset = metricsSubset;
+
+      renderOverlayLabels(metricsSubset, window.latestPoseKeypoints);
+      loadFeedback();
+    })
+    .catch(err => {
+      console.error("Error loading overlay:", err);
+      alert("Failed to load overlay.");
+    });
+}
+
+
+    async function loadUserSettings() {
+      try {
+        const res = await fetch('/profile-settings');
+        if (!res.ok) throw new Error("Failed to fetch profile settings");
+        const data = await res.json();
+        const riderStyleSel = document.getElementById("ridingStyle");
+        const bikeTypeSel = document.getElementById("bikeType");
+        if (data.bikeType && bikeTypeSel) bikeTypeSel.value = data.bikeType;
+        if (data.ridingStyle && riderStyleSel) riderStyleSel.value = data.ridingStyle;
+      } catch (err) {
+        console.warn("Could not load profile settings:", err);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      loadUserSettings();
+      const riderStyleSel = document.getElementById("ridingStyle");
+      const bikeTypeSel = document.getElementById("bikeType");
+      if (riderStyleSel) {
+        riderStyleSel.addEventListener("change", () => saveUserSetting("ridingStyle", riderStyleSel.value));
+      }
+      if (bikeTypeSel) {
+        bikeTypeSel.addEventListener("change", () => saveUserSetting("bikeType", bikeTypeSel.value));
+      }
+
+       const savedUnit = localStorage.getItem("preferredUnit") || "in";
+      //document.getElementById("unitSelector").value = savedUnit;
+      setMeasurementUnit(savedUnit);
+    });
+
+    function drawLines(ctx, lineSegments) {
+  lineSegments.forEach(segment => {
+    const { start, end, color, style, thickness } = segment;
+    ctx.beginPath();
+    ctx.strokeStyle = color || "black";
+    ctx.lineWidth = thickness || 2;
+
+    if (style === "dotted") {
+      ctx.setLineDash([4, 4]);  // Dash pattern: [dash, gap]
+    } else {
+      ctx.setLineDash([]);  // Solid line
+    }
+
+    ctx.moveTo(start[0], start[1]);
+    ctx.lineTo(end[0], end[1]);
+    ctx.stroke();
+  });
+
+  ctx.setLineDash([]); // Reset to solid after loop
+}
+
+
+</script>
+
+
+<script>
+ function drawAngleArcs(svg, metricsByLayer, keypoints, showArc) {
+  if (!showArc) return;
+
+  // 1) Fetch the CSS vars from :root
+  const styles   = getComputedStyle(document.documentElement);
+  const arcColor = styles.getPropertyValue('--arc-color').trim()    || '#FFD700';
+  const arcOp    = styles.getPropertyValue('--arc-opacity').trim()  || '1';
+  const arcDash  = styles.getPropertyValue('--arc-dash').trim()     || '';
+
+  // 2) Draw each angle’s arc with those styles
+  Object.values(metricsByLayer).forEach(metrics => {
+    (metrics.angles || []).forEach(ent => {
+      const pts = ent.points;
+      if (!pts || pts.length < 3) return;
+      const [A, B, C] = pts;
+      const pA = keypoints[A], pB = keypoints[B], pC = keypoints[C];
+      if (!pA || !pB || !pC) return;
+      const [ax, ay] = pA, [bx, by] = pB, [cx, cy] = pC;
+
+      const r = 30;
+      const cross = (ax - bx) * (cy - by) - (ay - by) * (cx - bx);
+      const sweep = cross < 0 ? 0 : 1;
+      const d = `M ${ax} ${ay} A ${r} ${r} 0 0 ${sweep} ${cx} ${cy}`;
+
+      const path = document.createElementNS(svg.namespaceURI, "path");
+      path.setAttribute("d", d);
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", arcColor);
+      path.setAttribute("stroke-opacity", arcOp);
+      path.setAttribute("stroke-width", "2");
+      if (arcDash) path.setAttribute("stroke-dasharray", arcDash);
+
+      svg.appendChild(path);
+
+      path.dataset.metricKey = ent.key;
+    });
+  });
+}
+
+</script>
+<script>
+    // Code to handle pixel to physical size button and popup dialog input
+function openReferenceSizeDialog() {
+  document.getElementById('referenceSizeModal').style.display = 'flex';
+}
+
+function closeReferenceSizeDialog() {
+  document.getElementById('referenceSizeModal').style.display = 'none';
+}
+
+function submitReferenceSize() {
+  const object = document.getElementById('referenceObject').value;
+  const size = parseFloat(document.getElementById('referenceSize').value);
+  const unit = document.getElementById('referenceUnit').value;
+
+  if (isNaN(size) || size <= 0) {
+    alert("Please enter a valid reference size.");
+    return;
+  }
+
+  const refData = {
+    object,
+    size,
+    unit: window.measurementUnit  // was  unit - created menu global setting
+  };
+
+  // You can send this to the server or store it globally
+  console.log("Reference size submitted:", refData);
+
+  // Store in global JS object for later use
+  window.referenceSize = refData;
+
+  closeReferenceSizeDialog();
+}
+
+
+let ctx = null;
+let overlayCanvas, overlayCtx;
+
+window.addEventListener("DOMContentLoaded", () => {
+  const canvas = document.getElementById("overlayCanvas"); // Or your actual canvas ID
+  if (canvas) {
+    ctx = canvas.getContext("2d");
+    console.log("Canvas context initialized:", ctx);
+  } else {
+    console.warn("Canvas element not found");
+  }
+});
+
+const canonicalOverlayLayers = [
+  "knee_angle",
+  "hip_angle",
+  "torso_angle",
+  "shoulder_angle",
+  "back_angle",
+  "arm_reach_distance",
+  "leg_length",
+  "knee_length",
+  "reach_distance",
+  "saddle_to_bar_distance"
+];
+
+
+async function analyzeAllLayers() {
+  const filename = window.latestPoseFilename;
+  if (!filename) {
+    alert("No image has been processed yet.");
+    return;
+  }
+
+ // ✅ Clear existing active buttons
+
+  if (window.currentActiveButtons) {
+    window.currentActiveButtons.forEach(btnId => {
+      setButtonState(btnId, false);
+    });
+    window.currentActiveButtons.clear();
+  }
+
+  clearAllButtonStates();
+  setButtonState("btn-analyze-all", true);
+
+  window.latestPoseMetrics = {};
+  window.latestPoseMetricsSubset = {};
+
+  for (const layer of canonicalOverlayLayers) {
+    try {
+      const response = await fetch(`/analyze?layer=${layer}&filename=${filename}`);
+      const data = await response.json();
+      if (data.error || !data.labels || data.labels.length === 0) continue;
+      window.latestPoseMetrics[layer] = data.metrics;
+    } catch (err) {
+      console.error(`Error loading layer ${layer}:`, err);
+    }
+  }
+
+  window.latestPoseMetricsSubset = window.latestPoseMetrics;
+  const imgUrl = `/media/${filename}`;
+  document.getElementById("analyzeImage").src = imgUrl;
+  renderOverlayLabels(window.latestPoseMetrics, window.latestPoseKeypoints);
+  loadFeedback();
+}
+
+
+
+    // handle user profile menu - user selects measure unit (in or cm)
+    // Set a global value for reference_unit
+    window.measurementUnit = localStorage.getItem("preferredUnit") || "cm";
+
+/*
+let currentUnit = window.measurementUnit ;  // Or load from profile/localStorage/server
+
+function handleUnitChange(selectElement) {
+  const selectedUnit = selectElement.value;
+  if (selectedUnit !== currentUnit) {
+    setMeasurementUnit(selectedUnit);  // Your existing logic
+    currentUnit = selectedUnit;
+  } else {
+    console.log("Same unit reselected — no change.");
+  }
+
+  document.getElementById('profileMenu').style.display = 'none';
+}
+
+    function setMeasurementUnit(value) {
+      window.measurementUnit = value;
+      localStorage.setItem("preferredUnit", value); // Save preference
+
+      // Optional: update referenceSize.unit as well
+      if (window.referenceSize) {
+        window.referenceSize.unit = value;
+      }
+        console.log("Measurement unit set to:", value);
+    }
+
+    // When the page loads, reflect stored preference
+    window.addEventListener("DOMContentLoaded", () => {
+      const unitSelect = document.getElementById("unitSelector");
+      if (unitSelect) unitSelect.value = window.measurementUnit;
+    });
+*/
+
+/*
+Step	Action	Result
+1	User selects file and clicks Process	/annotate POST request
+2	Server annotates all angle/distance layers	_layers.json created
+3	Client receives filename + metrics	Stores in window.latestPose*
+4	Image and all overlay labels are rendered	via renderOverlayLabels()
+5	Feedback is generated	via loadFeedback()
+*/
+
+async function handleProcessAndAnalyze() {
+
+const fileInput = document.getElementById("poseFile");
+const file = fileInput?.files?.[0];
+
+if (!file && !window.latestPoseFilename) {
+  alert("Please upload or capture an image first.");
+  return;
+}
+
+
+  const formData = new FormData();
+  if (file) {
+  formData.append("file", file);
+} else {
+  // If no file, reuse the previously saved filename
+  formData.append("filename", window.latestPoseFilename);
+}
+
+  formData.append("context", "cycling");
+  formData.append("layer", "all");
+
+  const refObjElem = document.getElementById("referenceObject");
+  const refSizeElem = document.getElementById("referenceSize");
+
+  if (refObjElem && refObjElem.value) {
+    formData.append("reference_object", refObjElem.value);
+  }
+
+  if (refSizeElem && refSizeElem.value) {
+    formData.append("reference_size", refSizeElem.value);
+  }
+
+  if (window.measurementUnit) {
+    formData.append("reference_unit", window.measurementUnit);
+  }
+
+  try {
+    const response = await fetch("/annotate", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Error response from /annotate:", errorText);
+      alert("Pose annotation failed. Check your input.");
+      return;
+    }
+
+    const result = await response.json();
+    const { filename, metrics, keypoints } = result;
+
+    window.latestPoseFilename = filename;
+    window.latestPoseMetrics = metrics;
+    window.latestPoseKeypoints = keypoints;
+    window.latestPoseMetricsSubset = metrics;
+
+    // Update the image
+    const imageUrl = `/media/${filename}`;
+    document.getElementById("analyzeImage").src = imageUrl;
+
+    // Show annotations
+    renderOverlayLabels(metrics, keypoints);
+
+    // Load feedback
+    loadFeedback();
+
+    // Visually mark that Analyze All is active
+    const allBtn = document.getElementById("btn-analyze-all");
+    if (allBtn) {
+      if (window.currentActiveButton) {
+        window.currentActiveButton.classList.remove("active-overlay");
+      }
+      allBtn.classList.add("active-overlay");
+      window.currentActiveButton = allBtn;
+    }
+
+  } catch (err) {
+    console.error("Error in handleProcessAndAnalyze:", err.message);
+    alert("An error occurred during processing.");
+  }
+}
+
+
+
+
+    function toggleMenu() {
+  const menu = document.getElementById('profileMenu');
+  menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+}
+
+
+function clearSelections() {
+  // 1) clear all layer buttons
+  if (window.currentActiveButtons) {
+    window.currentActiveButtons.forEach(btnId => {
+      const btn = document.getElementById(btnId);
+      if (btn) btn.classList.remove("active-overlay");
+    });
+    window.currentActiveButtons.clear();
+  }
+
+  // 2) also clear the Analyze All button
+  const allBtn = document.getElementById("btn-analyze-all");
+  if (allBtn) allBtn.classList.remove("active-overlay");
+  // clear single‐button tracker if you’re using it
+  window.currentActiveButton = null;
+
+  // 3) clear the SVG overlay
+  const svg = document.getElementById("svgOverlay");
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  // 4) reset the subset metrics so feedbackTable has nothing to show
+  window.latestPoseMetricsSubset = {};
+
+  // 5) reload the feedback table (or clear it)
+  if (typeof loadFeedback === "function") {
+    loadFeedback();
+  } else if (window.feedbackTable) {
+    window.feedbackTable.clear().draw();
+  }
+}
+
+
+
+
+
+function openUnitDialog() {
+  document.getElementById('unitDialog').style.display = 'block';
+  document.getElementById('profileMenu').style.display = 'none';
+
+  // Pre-select current value
+  const current = window.measurementUnit || 'cm';
+  const radios = document.getElementsByName('unitChoice');
+  radios.forEach(radio => {
+    radio.checked = radio.value === current;
+  });
+}
+
+function closeUnitDialog() {
+  document.getElementById('unitDialog').style.display = 'none';
+}
+
+function saveUnitSelection() {
+  const selected = document.querySelector('input[name="unitChoice"]:checked');
+  if (selected) {
+    const newUnit = selected.value;
+    setMeasurementUnit(newUnit);
+    currentUnit = newUnit;
+    closeUnitDialog();
+  }
+}
+
+// Your existing function
+
+function setMeasurementUnit(value) {
+  window.measurementUnit = value;
+  localStorage.setItem("preferredUnit", value);
+  if (window.referenceSize) {
+    window.referenceSize.unit = value;
+  }
+  console.log("Measurement unit set to:", value);
+}
+
+
+</script>
+
+<div id="referenceSizeModal" style="display: none; position: fixed; z-index: 1000; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
+  <div style="background: white; padding: 20px; border-radius: 8px; max-width: 400px; margin: auto;">
+    <h3>Reference Size Input</h3>
+    <p>Select a known object visible in the image and enter its real-world size.</p>
+
+    <label for="referenceObject">Reference Object:</label>
+    <select id="referenceObject" style="width: 100%; margin-bottom: 10px;">
+        <option value="front_wheel">Front Wheel Diameter</option>
+        <option value="rear_wheel">Rear Wheel Diameter</option>
+      <option value="wheel_diameter">Wheel Diameter</option>
+      <option value="crank_length">Crank Arm Length</option>
+      <option value="top_tube_length">Top Tube Length</option>
+      <option value="saddle_height">Saddle Height</option>
+      <option value="known_distance">Custom Known Distance</option>
+    </select>
+
+    <label for="referenceSize">Real-world Length:</label>
+    <input type="number" id="referenceSize" min="0" step="0.1" value="27" placeholder="e.g. 27.5" style="width: 100%; margin-bottom: 10px;">
+
+    <label for="referenceUnit">Unit:</label>
+    <select id="referenceUnit" style="width: 100%; margin-bottom: 20px;">
+      <option value="in">inch</option>
+        <option value="cm">cm</option>
+    </select>
+
+    <div style="text-align: right;">
+      <button onclick="submitReferenceSize()">Submit</button>
+      <button onclick="closeReferenceSizeDialog()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+
+
+</body>
+</html>
