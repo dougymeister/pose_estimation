@@ -517,6 +517,21 @@ svg.overlay {
                     </label>
                 </div>
 
+                <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+                  <button id="bikeLandmarkModeBtn" class="overlay-btn" type="button" onclick="toggleBikeLandmarkMode()">Bike Landmark Mode</button>
+                  <select id="bikeLandmarkType" class="modern-select" style="width: auto;">
+                    <option value="front_axle">front_axle</option>
+                    <option value="rear_axle">rear_axle</option>
+                    <option value="bottom_bracket">bottom_bracket</option>
+                    <option value="saddle_center">saddle_center</option>
+                    <option value="handlebar_center">handlebar_center</option>
+                    <option value="visible_hood_or_grip">visible_hood_or_grip</option>
+                    <option value="visible_pedal_spindle">visible_pedal_spindle</option>
+                  </select>
+                  <button id="saveBikeLandmarksBtn" class="overlay-btn" type="button" onclick="saveBikeLandmarks()">Save Bike Landmarks</button>
+                  <button id="clearBikeLandmarksBtn" class="overlay-btn" type="button" onclick="clearBikeLandmarks()">Clear Landmarks</button>
+                </div>
+
                                 <br>
                 <div class="overlay-button-grid">
                   <!--<button class="overlay-btn" id="btn-all_fit_points" onclick="applyOverlay('all_fit_points', this)">All Fit Points</button>-->
@@ -656,8 +671,149 @@ function syncSvgSize() {
   const svg = document.getElementById("svgOverlay");
   svg.setAttribute("width", img.clientWidth);
   svg.setAttribute("height", img.clientHeight);
+  renderBikeLandmarks();
 }
 window.addEventListener("resize", syncSvgSize);
+
+window.bikeLandmarks = window.bikeLandmarks || {};
+window.bikeLandmarkModeEnabled = false;
+
+function toggleBikeLandmarkMode() {
+  window.bikeLandmarkModeEnabled = !window.bikeLandmarkModeEnabled;
+  const btn = document.getElementById("bikeLandmarkModeBtn");
+  if (btn) {
+    btn.classList.toggle("active-overlay", window.bikeLandmarkModeEnabled);
+  }
+}
+
+function handleBikeLandmarkClick(event) {
+  if (!window.bikeLandmarkModeEnabled) return;
+
+  const img = document.getElementById("analyzeImage");
+  const landmarkSelect = document.getElementById("bikeLandmarkType");
+  if (!img || !landmarkSelect || !img.naturalWidth || !img.naturalHeight) return;
+
+  const rect = img.getBoundingClientRect();
+  const displayX = event.clientX - rect.left;
+  const displayY = event.clientY - rect.top;
+
+  if (displayX < 0 || displayY < 0 || displayX > rect.width || displayY > rect.height) {
+    return;
+  }
+
+  const landmarkType = landmarkSelect.value;
+  const originalX = Math.round(displayX * (img.naturalWidth / rect.width));
+  const originalY = Math.round(displayY * (img.naturalHeight / rect.height));
+
+  window.bikeLandmarks[landmarkType] = {
+    x: originalX,
+    y: originalY,
+    visible: true
+  };
+
+  renderBikeLandmarks();
+}
+
+function renderBikeLandmarks() {
+  const svg = document.getElementById("svgOverlay");
+  const img = document.getElementById("analyzeImage");
+  if (!svg || !img) return;
+
+  svg.querySelectorAll(".bike-landmark-marker").forEach(el => el.remove());
+
+  if (!window.bikeLandmarks || !img.naturalWidth || !img.naturalHeight) return;
+
+  const rect = img.getBoundingClientRect();
+  const scaleX = rect.width / img.naturalWidth;
+  const scaleY = rect.height / img.naturalHeight;
+
+  Object.entries(window.bikeLandmarks).forEach(([landmarkType, point]) => {
+    if (!point || point.visible === false) return;
+
+    const x = point.x * scaleX;
+    const y = point.y * scaleY;
+    const group = document.createElementNS(svg.namespaceURI, "g");
+    group.setAttribute("class", "bike-landmark-marker");
+    group.dataset.landmarkType = landmarkType;
+
+    const circle = document.createElementNS(svg.namespaceURI, "circle");
+    circle.setAttribute("cx", x);
+    circle.setAttribute("cy", y);
+    circle.setAttribute("r", "6");
+    circle.setAttribute("fill", "#00d4ff");
+    circle.setAttribute("stroke", "#002b36");
+    circle.setAttribute("stroke-width", "2");
+    circle.setAttribute("class", "bike-landmark-marker");
+
+    const label = document.createElementNS(svg.namespaceURI, "text");
+    label.setAttribute("x", x + 9);
+    label.setAttribute("y", y - 9);
+    label.setAttribute("fill", "#00d4ff");
+    label.setAttribute("stroke", "#002b36");
+    label.setAttribute("stroke-width", "3");
+    label.setAttribute("paint-order", "stroke");
+    label.setAttribute("font-family", "sans-serif");
+    label.setAttribute("font-size", "13");
+    label.setAttribute("font-weight", "bold");
+    label.setAttribute("class", "bike-landmark-marker");
+    label.textContent = landmarkType;
+
+    group.appendChild(circle);
+    group.appendChild(label);
+    svg.appendChild(group);
+  });
+}
+
+async function saveBikeLandmarks() {
+  const img = document.getElementById("analyzeImage");
+  const filename = window.latestPoseFilename;
+
+  if (!filename) {
+    alert("No processed image available.");
+    return;
+  }
+
+  if (!window.bikeLandmarks || Object.keys(window.bikeLandmarks).length === 0) {
+    alert("No bike landmarks have been placed.");
+    return;
+  }
+
+  const payload = {
+    filename,
+    image_filename: filename,
+    image_width: img?.naturalWidth || null,
+    image_height: img?.naturalHeight || null,
+    bike_landmarks: window.bikeLandmarks
+  };
+
+  try {
+    const response = await fetch("/bike-landmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const result = await response.json();
+    if (!response.ok || result.error) {
+      throw new Error(result.error || "Failed to save bike landmarks.");
+    }
+    alert("Bike landmarks saved.");
+  } catch (err) {
+    console.error("Error saving bike landmarks:", err);
+    alert("Failed to save bike landmarks.");
+  }
+}
+
+function clearBikeLandmarks() {
+  window.bikeLandmarks = {};
+  renderBikeLandmarks();
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  const img = document.getElementById("analyzeImage");
+  const svg = document.getElementById("svgOverlay");
+  if (img) img.addEventListener("click", handleBikeLandmarkClick);
+  if (svg) svg.addEventListener("click", handleBikeLandmarkClick);
+});
 
 // any time the user flips arc‐path on/off, redraw the overlays
 document
@@ -982,6 +1138,7 @@ if (l.metricKey) {
   });
 
   enableDragOnLabels();
+  renderBikeLandmarks();
 }
 
 
@@ -1773,6 +1930,7 @@ function clearSelections() {
   // 3) clear the SVG overlay
   const svg = document.getElementById("svgOverlay");
   while (svg.firstChild) svg.removeChild(svg.firstChild);
+  renderBikeLandmarks();
 
   // 4) reset the subset metrics so feedbackTable has nothing to show
   window.latestPoseMetricsSubset = {};
