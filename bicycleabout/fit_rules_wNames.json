@@ -1,0 +1,57 @@
+{
+  "knee_angle": {
+    "road": {
+      "endurance": {
+        "min": 140,
+        "max": 150,
+        "units": "°",
+        "explanation": "Overextension may cause knee strain; adjust saddle height."
+      },
+      "sprinting": {
+        "min": 135,
+        "max": 145,
+        "units": "°",
+        "explanation": "Aggressive fit allows for more pedal power; monitor knee comfort."
+      }
+    },
+    "mountain": {
+      "recreational": {
+        "min": 135,
+        "max": 145,
+        "units": "°",
+        "explanation": "Lower knee angles improve control on technical trails."
+      }
+    }
+  },
+  "hip_angle": {
+    "road": {
+      "endurance": {
+        "min": 45,
+        "max": 55,
+        "units": "°",
+        "explanation": "Closed hip angles can reduce power; adjust handlebar drop or reach."
+      }
+    }
+  },
+  "arm_reach_distance_cm": {
+    "road": {
+      "endurance": {
+        "min": 45,
+        "max": 60,
+        "units": "cm",
+        "explanation": "Excess reach can cause neck and shoulder fatigue; shorten stem or reach."
+      }
+    }
+  },
+  "torso_angle": {
+    "road": {
+      "endurance": {
+        "min": 35,
+        "max": 50,
+        "units": "°",
+        "explanation": "Too upright limits aerodynamics; too low causes back strain."
+      }
+    }
+  }
+}
+

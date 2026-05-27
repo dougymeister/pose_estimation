@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pose Annotation Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+    .tab-header {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .tab-button {
+      padding: 10px 16px;
+      border: none;
+      background-color: #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .tab-button.active {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .input-panel {
+      display: none;
+    }
+    .input-panel.active {
+      display: block;
+    }
+    .video-container, .image-preview {
+      text-align: center;
+      margin-top: 10px;
+    }
+    video, img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+    #annotatedTextOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      width: 100%;
+      height: auto;
+      display: none;
+    }
+    .overlay-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+    .overlay-section, .metrics-section {
+      margin-top: 15px;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .metric-box {
+      background-color: #fafafa;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.95em;
+    }
+    @media (max-width: 600px) {
+      .tab-header {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="tab-header">
+        <button class="tab-button active" onclick="showPanel('imagePanel', this)">🖼 Image Input</button>
+        <button class="tab-button" onclick="showPanel('videoPanel', this)">🎥 Video Input</button>
+      </div>
+    </div>
+
+    <div id="imagePanel" class="card input-panel active">
+      <input type="file" accept="image/*" onchange="previewFile(event, 'previewImage')">
+      <button onclick="submitCapturedPhoto()">Submit</button>
+      <div class="image-preview">
+        <img id="previewImage" alt="Preview" />
+      </div>
+    </div>
+
+    <div id="videoPanel" class="card input-panel">
+      <input type="file" accept="video/*" onchange="previewVideo(event, 'previewVideo')">
+      <button onclick="submitRecordedVideo()">Submit</button>
+      <div class="video-container">
+        <video id="previewVideo" controls></video>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>Annotated Output:</strong><br>
+      <div class="overlay-wrapper">
+        <video id="annotatedVideo" width="480" controls style="display: none;"></video>
+        <img id="annotatedImage" width="480" style="display: none;" />
+        <img id="annotatedTextOverlay" />
+      </div>
+      <br>
+      <button onclick="toggleTextLayer()">Display Annotation Text</button>
+
+      <div class="overlay-section">
+        <h4>Overlay Layers:</h4>
+        <button onclick="alert('Coming soon: joint angles')">Joint Angles</button>
+        <button onclick="alert('Coming soon: saddle position')">Saddle Position</button>
+        <button onclick="alert('Coming soon: handlebar reach')">Handlebar Reach</button>
+        <button onclick="alert('Coming soon: spine alignment')">Spine Alignment</button>
+      </div>
+
+      <div class="metrics-section">
+        <h4>Live Metrics:</h4>
+        <div class="metrics-grid">
+          <div class="metric-box">Knee Angle (min/max): <strong>N/A</strong></div>
+          <div class="metric-box">Hip Angle Range: <strong>80° – 110°</strong></div>
+          <div class="metric-box">Spine Lean Angle: <strong>30° forward</strong></div>
+          <div class="metric-box">Bottom Pedal Distance: <strong>72cm</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let textLayerVisible = false;
+
+    function showPanel(id, button) {
+      document.querySelectorAll('.input-panel').forEach(el => el.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+      button.classList.add('active');
+    }
+
+    function previewFile(event, previewId) {
+      const file = event.target.files[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
+        document.getElementById(previewId).src = url;
+      }
+    }
+
+    function previewVideo(event, previewId) {
+      previewFile(event, previewId);
+    }
+
+    function submitCapturedPhoto() {
+      const fileInput = document.querySelector('input[type="file"][accept^="image"]');
+      const file = fileInput.files[0];
+      if (!file) return alert("Please select an image.");
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("context", "cycling");
+      formData.append("layer", "keypoints");
+
+      fetch("/annotate", { method: "POST", body: formData })
+        .then(res => res.json())
+        .then(data => {
+          fetch(`/media/${data.blob_url}`)
+            .then(res => res.blob())
+            .then(blob => {
+              showAnnotatedOutput(blob, false);
+              updateKneeMetrics(data.metrics);
+            });
+
+          document.getElementById("annotatedTextOverlay").src = `/media/${data.text_layer_url}`;
+        });
+    }
+
+    function submitRecordedVideo() {
+      const fileInput = document.querySelector('input[type="file"][accept^="video"]');
+      const file = fileInput.files[0];
+      if (!file) return alert("Please select a video.");
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("context", "cycling");
+      formData.append("layer", "keypoints");
+
+      fetch("/annotate", { method: "POST", body: formData })
+        .then(res => res.blob())
+        .then(blob => showAnnotatedOutput(blob, true));
+    }
+
+    function showAnnotatedOutput(blob, isVideo) {
+      const videoEl = document.getElementById("annotatedVideo");
+      const imageEl = document.getElementById("annotatedImage");
+      const textEl = document.getElementById("annotatedTextOverlay");
+      const url = URL.createObjectURL(blob);
+
+      if (isVideo) {
+        videoEl.src = url;
+        videoEl.style.display = "block";
+        imageEl.style.display = "none";
+        textEl.style.display = "none";
+      } else {
+        imageEl.src = url;
+        imageEl.style.display = "block";
+        videoEl.style.display = "none";
+        textEl.style.display = textLayerVisible ? "block" : "none";
+      }
+    }
+
+    function updateKneeMetrics(metrics) {
+      const angleBox = document.querySelector('.metric-box:nth-child(1)');
+      if (metrics.knee_angle) {
+        angleBox.innerHTML = `Knee Angle (min/max): <strong>${metrics.knee_angle}°</strong><br/><small>Recommended: ${metrics.recommended}</small>`;
+      } else {
+        angleBox.innerHTML = `Knee Angle (min/max): <strong>N/A</strong>`;
+      }
+    }
+
+    function toggleTextLayer() {
+      const overlay = document.getElementById("annotatedTextOverlay");
+      textLayerVisible = !textLayerVisible;
+      overlay.style.display = textLayerVisible ? "block" : "none";
+    }
+  </script>
+</body>
+</html>

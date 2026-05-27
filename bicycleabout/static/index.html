@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pose Estimation - Cycling Context</title>
+    <style>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .section { margin-bottom: 20px; }
+        .context-panel, .video-container, .overlay-panel, .metrics-panel, .image-capture-panel, .video-capture-panel {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 8px;
+        }
+        .overlay-panel button { margin: 4px; }
+        .metrics-panel ul { padding-left: 20px; }
+        video, img, canvas {
+            max-width: 100%;
+            display: block;
+            margin-top: 10px;
+        }
+    </style>
+    </style>
+</head>
+<body onload="loadOverlayButtons('cycling')">
+
+    <div class="context-panel section">
+        <label for="contextSelector"><strong>Select Activity:</strong></label>
+        <select id="contextSelector">
+            <option value="cycling">Cycling</option>
+            <option value="yoga">Yoga</option>
+            <option value="running">Running</option>
+            <option value="ergonomics">Ergonomics</option>
+        </select>
+    </div>
+
+    <div class="image-capture-panel section">
+        <strong>Upload or Capture Image:</strong><br>
+        <input type="file" id="imageInput" accept="image/*" capture="environment"><br>
+        <button onclick="startCamera()">📷 Start Camera</button>
+        <button onclick="capturePhoto()">📸 Take Photo</button><br>
+        <video id="cameraPreview" autoplay playsinline width="300"></video>
+        <canvas id="capturedCanvas" width="300" height="225" style="display:none;"></canvas>
+        <img id="previewImage" src="" alt="Preview Image">
+        <button onclick="submitCapturedPhoto('joint_angles')">Submit Photo for Annotation</button>
+    </div>
+
+    <div class="video-capture-panel section">
+        <strong>Record Video:</strong><br>
+        <button onclick="startVideoRecording()">🎥 Start Recording</button>
+        <button onclick="stopVideoRecording()">⏹ Stop Recording</button>
+        <video id="recordPreview" autoplay playsinline muted></video>
+        <video id="recordedVideo" controls></video>
+        <button onclick="submitRecordedVideo('joint_angles')">Submit Recorded Video</button>
+    </div>
+
+    <div class="video-container section">
+        <strong>Uploaded Video:</strong><br>
+        <video id="annotatedVideo" width="480" controls>
+            <source src="sample_cycling.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <div class="overlay-panel section">
+        <strong>Overlay Layers:</strong><br>
+    </div>
+
+    <div class="metrics-panel section">
+        <strong>Live Metrics:</strong>
+        <ul id="metricsList">
+            <li>Knee Angle (min/max): 65° / 135°</li>
+            <li>Hip Angle Range: 80° – 110°</li>
+            <li>Spine Lean Angle: 30° forward</li>
+            <li>Bottom Pedal Distance: 72cm</li>
+        </ul>
+    </div>
+
+    <script>
+
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        document.getElementById("supportNotice").textContent = "Sorry, your browser does not support camera access.";
+    }
+
+
+        let videoStream = null;
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        function startCamera() {
+            const video = document.getElementById("cameraPreview");
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+                .then(stream => {
+                    videoStream = stream;
+                    video.srcObject = stream;
+                })
+                .catch(err => alert("Camera error: " + err));
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById("cameraPreview");
+            const canvas = document.getElementById("capturedCanvas");
+            const context = canvas.getContext("2d");
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageDataURL = canvas.toDataURL("image/png");
+            document.getElementById("previewImage").src = imageDataURL;
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+        }
+
+        async function submitCapturedPhoto(layer) {
+            const canvas = document.getElementById("capturedCanvas");
+            canvas.toBlob(async function(blob) {
+                if (!blob) return alert("No photo captured.");
+                const context = document.getElementById("contextSelector").value;
+                const formData = new FormData();
+                formData.append("file", blob, "captured_image.png");
+                formData.append("context", context);
+                formData.append("layer", layer);
+                const response = await fetch("/annotate", {
+                    method: "POST",
+                    body: formData
+                });
+                if (response.ok) {
+                    const resultBlob = await response.blob();
+                    const url = URL.createObjectURL(resultBlob);
+                    document.getElementById("previewImage").src = url;
+                } else {
+                    alert("Annotation failed.");
+                }
+            }, "image/png");
+        }
+
+async function startVideoRecording() {
+    const preview = document.getElementById("recordPreview");
+
+    try {
+        const constraints = {
+            video: true,
+            audio: true  // Use audio if available
+        };
+
+        // Request media input
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        // Show live preview
+        preview.srcObject = stream;
+        videoStream = stream;
+        recordedChunks = [];
+
+        // Check MIME support
+        const options = MediaRecorder.isTypeSupported("video/webm; codecs=vp9")
+            ? { mimeType: "video/webm; codecs=vp9" }
+            : { mimeType: "video/webm" };
+
+        mediaRecorder = new MediaRecorder(stream, options);
+
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: "video/webm" });
+            const videoURL = URL.createObjectURL(blob);
+            document.getElementById("recordedVideo").src = videoURL;
+            document.getElementById("recordedVideo").style.display = "block";
+        };
+
+        mediaRecorder.start();
+        alert("Recording started. Click stop when ready.");
+    } catch (err) {
+        alert("Camera or microphone not available:\n" + err.message);
+    }
+}
+
+        function stopVideoRecording() {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+                if (videoStream) {
+                    videoStream.getTracks().forEach(track => track.stop());
+                    document.getElementById("recordPreview").srcObject = null;
+                }
+            }
+        }
+
+        async function submitRecordedVideo(layer) {
+            const context = document.getElementById("contextSelector").value;
+            const formData = new FormData();
+            const blob = new Blob(recordedChunks, { type: "video/webm" });
+            formData.append("file", blob, "recorded_video.webm");
+            formData.append("context", context);
+            formData.append("layer", layer);
+            const response = await fetch("/annotate", {
+                method: "POST",
+                body: formData
+            });
+            if (response.ok) {
+                const resultBlob = await response.blob();
+                const url = URL.createObjectURL(resultBlob);
+                document.getElementById("annotatedVideo").src = url;
+            } else {
+                alert("Annotation failed.");
+            }
+        }
+
+        document.getElementById('imageInput').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('previewImage').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        const contextOverlays = {
+            cycling: ["joint_angles", "saddle_position", "handlebar_reach", "spine_alignment"],
+            yoga: ["pose_alignment", "balance", "symmetry"],
+            running: ["stride_length", "joint_angles", "arm_swing"],
+            ergonomics: ["spine_posture", "desk_angle"]
+        };
+
+        function loadOverlayButtons(context) {
+            const overlayPanel = document.querySelector(".overlay-panel");
+            overlayPanel.innerHTML = "<strong>Overlay Layers:</strong><br>";
+            contextOverlays[context].forEach(layer => {
+                const btn = document.createElement("button");
+                btn.textContent = layer.replace(/_/g, " ");
+                btn.onclick = () => requestOverlay(layer);
+                overlayPanel.appendChild(btn);
+            });
+        }
+
+        document.getElementById("contextSelector").addEventListener("change", function () {
+            loadOverlayButtons(this.value);
+        });
+
+        async function requestOverlay(layer) {
+            const input = document.getElementById("imageInput");
+            const file = input.files[0];
+            if (!file) return alert("Please select an image file first.");
+
+            const context = document.getElementById("contextSelector").value;
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("context", context);
+            formData.append("layer", layer);
+
+            const response = await fetch("/annotate", {
+                method: "POST",
+                body: formData
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                document.getElementById("previewImage").src = url;
+            } else {
+                alert("Annotation failed.");
+            }
+        }
+    </script>
+
+</body>
+</html>

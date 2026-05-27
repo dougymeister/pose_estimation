@@ -1,0 +1,43 @@
+{
+  "filename": "dybike_good_download_1b8cc91805114145b76f2fd360b9fd04.jpg",
+  "image_filename": "dybike_good_download_1b8cc91805114145b76f2fd360b9fd04.jpg",
+  "image_width": 896,
+  "image_height": 1195,
+  "bike_landmarks": {
+    "front_axle": {
+      "x": 745,
+      "y": 942,
+      "visible": true
+    },
+    "rear_axle": {
+      "x": 272,
+      "y": 958,
+      "visible": true
+    },
+    "bottom_bracket": {
+      "x": 467,
+      "y": 976,
+      "visible": true
+    },
+    "saddle_center": {
+      "x": 392,
+      "y": 695,
+      "visible": true
+    },
+    "handlebar_center": {
+      "x": 614,
+      "y": 638,
+      "visible": true
+    },
+    "visible_hood_or_grip": {
+      "x": 669,
+      "y": 605,
+      "visible": true
+    },
+    "visible_pedal_spindle": {
+      "x": 560,
+      "y": 1003,
+      "visible": true
+    }
+  }
+}

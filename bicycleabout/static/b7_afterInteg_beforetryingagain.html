@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Pose Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+          font-family: sans-serif;
+          margin: 0;
+          padding: 0;
+          background: #f2f2f2;
+        }
+            .header {
+          position: sticky;
+          top: 0;
+          z-index: 999;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 10px 20px;
+          background-color: #f5f5f5;
+          border-bottom: 1px solid #ccc;
+        }
+            .dashboard {
+          max-width: 900px;
+          margin: auto;
+          background: white;
+          padding: 20px;
+        }
+        .tabs {
+          display: flex;
+          border-bottom: 2px solid #ccc;
+          background: #eee;
+        }
+        .tabs button {
+          flex: 1;
+          padding: 10px;
+          background: #eee;
+          border: none;
+          border-right: 1px solid #ccc;
+          font-weight: bold;
+          cursor: pointer;
+        }
+        .tabs button.active {
+          background-color: #4CAF50;
+          color: white;
+        }
+        .tab-content {
+          display: none;
+          padding: 20px;
+          background: white;
+        }
+        .tab-content.active {
+          display: block;
+        }
+        #analyzeImage {
+          max-width: 100%;
+          display: none;
+          margin-top: 12px;
+        }
+        .form-section {
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          padding: 12px;
+          margin-top: 6px;
+          background-color: #fafafa;
+        }
+        .modern-select {
+          width: 100%;
+          padding: 6px 10px;
+          border: 1px solid #aaa;
+          border-radius: 6px;
+          background-color: #fff;
+          font-size: 14px;
+          margin-bottom: 12px;
+          appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23333' fill='none' stroke-width='2'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 10px center;
+          background-size: 12px;
+        }
+    </style>
+
+    <style>
+        .tab-button {
+          padding: 10px 16px;
+          font-size: 16px;
+          font-weight: 500;
+          background-color: #eaeaea;
+          border: 1px solid #ccc;
+          border-bottom: none;
+          border-radius: 6px 6px 0 0;
+          cursor: pointer;
+          margin-right: 4px;
+        }
+
+        .tab-button.active {
+          background-color: #d0f0d0;
+          border-bottom: 1px solid #f5f5f5;
+        }
+
+        .tab-button:hover {
+          background-color: #ddd;
+        }
+
+        .pose-metric-btn {
+          padding: 8px 14px;
+          font-size: 14px;
+          border: 1px solid #ccc;
+          background-color: #f0f0f0;
+          border-radius: 6px;
+          cursor: pointer;
+          text-align: left;
+        }
+
+        .pose-metric-btn:hover {
+          background-color: #e0e0e0;
+        }
+        .overlay-btn.active {
+          background-color: #4CAF50;
+          color: white;
+          font-weight: bold;
+        }
+
+    </style>
+
+</head>
+<body>
+
+<div style="position: sticky; top: 0; z-index: 999; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background-color: #f5f5f5; border-bottom: 1px solid #ccc;">
+    <div style="display: flex; align-items: center;">
+        <img alt="Logo" src="https://img.icons8.com/ios-filled/50/bicycle.png"
+             style="height: 32px; margin-right: 12px;"/>
+        <span style="font-size: 20px; font-weight: bold; color: #333;">Cyclist Pose Analyzer</span>
+    </div>
+    <div class="menu" style="position: relative;">
+        <button aria-label="User Profile" onclick="toggleMenu()"
+                style="padding: 8px 12px; border: none; background: none; cursor: pointer;">
+            <i class="fas fa-cog fa-lg" style="color: #333;" title="User Profile"></i>
+        </button>
+        <div id="profileMenu"
+             style="display: none; position: absolute; right: 0; background-color: white; border: 1px solid #ccc; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); margin-top: 5px; z-index: 10;">
+            <div onclick="openForm('riderForm')" style="padding: 10px; cursor: pointer;">Rider Info</div>
+            <div onclick="openForm('bikeForm')" style="padding: 10px; cursor: pointer;">Bicycle Info</div>
+            <div onclick="openForm('historyForm')" style="padding: 10px; cursor: pointer;">Prior Images & Analysis</div>
+        </div>
+    </div>
+</div>
+
+
+<div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; background-color: #f5f5f5; border-bottom: 1px solid #ccc;">
+
+</div>
+</div>
+
+
+<script>
+    let uploadedDataUrl = "";
+    let uploadedFile = null;
+    let lastOverlayMode = "all";
+let lastPoseType = "seated";
+    let processedImageUrl = "";
+    let isProcessed = false;
+
+    const tabButtons = [];
+    const tabContents = [];
+    window.onload = () => {
+      document.querySelectorAll(".tabs button").forEach((btn, i) => {
+        tabButtons.push(btn);
+        tabContents.push(document.querySelectorAll(".tab-content")[i]);
+      });
+    };
+
+    function showTab(index) {
+      tabButtons.forEach((btn, i) => {
+        btn.classList.toggle("active", i === index);
+        tabContents[i].classList.toggle("active", i === index);
+      });
+
+      if (index === 2) {
+        const imgSrc = isProcessed ? processedImageUrl : uploadedDataUrl;
+        if (imgSrc) {
+          const analyzeImage = document.getElementById("analyzeImage");
+          analyzeImage.src = imgSrc;
+          analyzeImage.style.display = 'block';
+        }
+        const riderSel = document.querySelector('#riderForm select');
+        const bikeSel = document.querySelector('#bikeForm select');
+        if (riderSel) document.getElementById('ridingStyle').value = riderSel.value;
+        if (bikeSel) document.getElementById('bikeType').value = bikeSel.value;
+      }
+    }
+
+   function toggleMenu() {
+      const menu = document.getElementById('profileMenu');
+      menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    }
+
+    function openForm(formId) {
+      closeAllForms();
+      document.getElementById(formId).style.display = 'block';
+      document.getElementById('profileMenu').style.display = 'none';
+    }
+
+    function closeForm(formId) {
+      document.getElementById(formId).style.display = 'none';
+    }
+
+    function closeAllForms() {
+      ['riderForm', 'bikeForm', 'historyForm'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+      });
+    }
+
+    window.onclick = function(event) {
+      if (!event.target.closest('button') && !event.target.closest('#profileMenu')) {
+        document.getElementById('profileMenu').style.display = 'none';
+      }
+    };
+
+    function updatePoseThumbnail() {
+      const thumbs = {
+        seated: "/images/bicycle_seated_demo.webp"
+      };
+      const selected = document.querySelector('input[name="pose"]:checked').value;
+      document.getElementById("poseThumbnail").src = thumbs[selected] || thumbs.seated;
+    }
+
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      uploadedFile = file;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        uploadedDataUrl = e.target.result;
+        const thumb = document.getElementById("uploadThumb");
+        thumb.src = uploadedDataUrl;
+        thumb.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
+  async function submitForProcessing() {
+    if (!uploadedFile) {
+      alert("Please upload a file before processing.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", uploadedFile);
+    formData.append("context", "pose_analysis");
+    //formData.append("layer", "pose_overlay");
+    formData.append("layer", lastOverlayMode);  // use the most recently selected overlay
+
+    try {
+      const response = await fetch("/annotate", {
+        method: "POST",
+        body: formData
+      });
+
+      const analyzeImage = document.getElementById("analyzeImage");
+      const seatedBtns = document.getElementById("seatedButtons");
+
+      if (!response.ok) throw new Error("Server error: " + response.status);
+      const contentType = response.headers.get("content-type");
+
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+        analyzeImage.src = `/media/${data.blob_url}`;
+        processedImageUrl = analyzeImage.src;
+        document.querySelector("textarea").value = `Knee Angle: ${data.metrics.knee_angle}\nRecommendation: ${data.metrics.recommended}`;
+      } else {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        analyzeImage.src = url;
+        processedImageUrl = url;
+        document.querySelector("textarea").value = "Processed video returned.";
+      }
+
+      analyzeImage.style.display = "block";
+      isProcessed = true;
+
+      const poseType = document.querySelector('input[name="pose"]:checked').value;
+      seatedBtns.style.display = poseType === "seated" ? "block" : "none";
+
+if (poseType === "seated") {
+  // Show the vertical button list
+  seatedBtns.style.display = "block";
+
+  // Visually activate the All Measures button
+  document.querySelectorAll(".overlay-btn").forEach(btn => btn.classList.remove("active"));
+  document.getElementById("btn-all")?.classList.add("active");
+
+  // Programmatically trigger the All Measures overlay
+  applyOverlay("all");
+} else {
+  seatedBtns.style.display = "none";
+}
+
+
+      lastOverlayMode = "all";
+lastPoseType = document.querySelector('input[name="pose"]:checked').value;
+document.querySelectorAll(".overlay-btn").forEach(btn => btn.classList.remove("active"));
+document.getElementById("btn-all")?.classList.add("active");
+
+    } catch (err) {
+      alert("Error processing file: " + err.message);
+    }
+  }
+
+async function applyOverlay(mode) {
+  if (!uploadedFile || !isProcessed) {
+    alert("No processed image available.");
+    return;
+  }
+  console.log("Applying overlay:", mode);
+
+  // UI toggle active button
+  document.querySelectorAll(".overlay-btn").forEach(btn => btn.classList.remove("active"));
+  const activeBtn = document.getElementById(`btn-${mode}`);
+  if (activeBtn) activeBtn.classList.add("active");
+
+  const formData = new FormData();
+  formData.append("file", uploadedFile);
+  formData.append("context", "pose_analysis");
+  formData.append("layer", mode);
+
+  try {
+    const response = await fetch("/annotate", {
+      method: "POST",
+      body: formData
+    });
+
+    const analyzeImage = document.getElementById("analyzeImage");
+
+    if (!response.ok) throw new Error("Server error: " + response.status);
+    const contentType = response.headers.get("content-type");
+
+    if (contentType.includes("application/json")) {
+      const data = await response.json();
+      analyzeImage.src = `/media/${data.blob_url}?t=${Date.now()}`;
+      processedImageUrl = analyzeImage.src;
+      document.querySelector("textarea").value = `Knee Angle: ${data.metrics.knee_angle}\nRecommendation: ${data.metrics.recommended}`;
+    } else {
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      analyzeImage.src = url;
+      processedImageUrl = url;
+      document.querySelector("textarea").value = "Overlay updated.";
+    }
+
+    lastOverlayMode = mode;
+
+  } catch (err) {
+    alert("Error applying overlay: " + err.message);
+  }
+}
+
+
+</script>
+
+<div class="dashboard">
+    <div class="tabs">
+        <button class="active" onclick="showTab(0)">1. Select Pose Type</button>
+        <button onclick="showTab(1)">2. Upload Image</button>
+        <button onclick="showTab(2)">3. Analyze Pose</button>
+    </div>
+
+    <div class="tab-content active">
+
+        <h3>Step 1: Select Pose Type</h3>
+        <div style="display: flex; gap: 20px; align-items: flex-start;">
+            <div style="display: flex; flex-direction: column;padding-right:50px;">
+                <label><input checked name="pose" onchange="updatePoseThumbnail()" type="radio" value="seated">
+                    Seated</label>
+                <label><input name="pose" onchange="updatePoseThumbnail()" type="radio" value="standing">
+                    Standing</label>
+                <label><input name="pose" onchange="updatePoseThumbnail()" type="radio" value="dynamic"> Dynamic</label>
+                <label><input name="pose" onchange="updatePoseThumbnail()" type="radio" value="random"> Random</label>
+            </div>
+            <img id="poseThumbnail" src="/images/bicycle_seated_demo.webp"
+                 style="border: 1px solid lightgray"
+                 width="200"/>
+        </div>
+        <br>
+        <button onclick="showTab(1)" style="background-color:#4CAF50;color:white">Next</button>
+
+    </div>
+
+    <div class="tab-content">
+
+        <h3>Step 2: Upload or Capture Image</h3>
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <input accept="image/*,video/*" onchange="handleFileUpload(event)" type="file">
+            <img id="uploadThumb" style="display:none; border: 1px solid lightgray;" width="200"/>
+        </div>
+        <br>
+        <button onclick="showTab(2)" style="background-color:#4CAF50;color:white">Next</button>
+
+    </div>
+
+    <div class="tab-content">
+        <h3>Step 3: Analyze Pose</h3>
+        <div class="form-section">
+            <p>The settings below will be used for analysis. Adjust as needed and click "Process" to continue.</p>
+            <label>Bicycle Type:</label>
+            <select class="modern-select" id="bikeType">
+                <option>Road</option>
+                <option>MTB</option>
+                <option>Touring</option>
+                <option>Cruiser</option>
+                <option>Electric</option>
+            </select>
+            <label>Riding Style:</label>
+            <select class="modern-select" id="ridingStyle">
+                <option>Casual</option>
+                <option>Intermediate</option>
+                <option>Aggressive</option>
+            </select>
+            <button onclick="submitForProcessing()" style="float: right;">Process</button>
+        </div>
+    <div style="display: flex; align-items: flex-start;">
+      <img id="analyzeImage" />
+        <div id="seatedButtons" style="display: none; margin-left: 20px; margin-top: 12px;">
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button id="btn-all"   onclick="applyOverlay('all')"   class="pose-metric-btn overlay-btn">All Measures</button>
+            <button id="btn-leg"   onclick="applyOverlay('leg')"   class="pose-metric-btn overlay-btn">Leg Angle</button>
+            <button onclick="applyOverlay('arm_angle')" class="pose-metric-btn overlay-btn">Arm Angle</button>
+            <button onclick="applyOverlay('arm_dist')" class="pose-metric-btn overlay-btn">Arm Distance</button>
+            <button id="btn-reach" onclick="applyOverlay('reach')" class="pose-metric-btn overlay-btn">Reach Distance</button>
+            <button onclick="alert('Saddle Height - logic TBD')"   class="pose-metric-btn">Saddle Height</button>
+            <button onclick="alert('Saddle Setback - logic TBD')"  class="pose-metric-btn">Saddle Setback</button>
+          </div>
+        </div>
+   </div>
+        <br><br>
+        <h3>Analysis & Performance Feedback</h3>
+        <textarea rows="4" style="width: 100%;"></textarea>
+    </div>
+</div> <!-- end dashboard -->
+
+<!-- Popups -->
+<div class="modal" id="riderForm"
+     style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%, -20%); background:#fff; border:1px solid #ccc; border-radius:8px; padding:20px; z-index:100;">
+    <h3>Rider Info</h3>
+    <label>Height (cm): <input type="number"/></label><br><br>
+    <label>Weight (kg): <input type="number"/></label><br><br>
+    <label>Riding Style:
+        <select>
+            <option>Casual</option>
+            <option>Intermediate</option>
+            <option>Aggressive</option>
+        </select>
+    </label><br><br>
+    <button onclick="closeForm('riderForm')">Close</button>
+</div>
+
+<div class="modal" id="bikeForm"
+     style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%, -20%); background:#fff; border:1px solid #ccc; border-radius:8px; padding:20px; z-index:100;">
+    <h3>Bicycle Info</h3>
+    <label>Bicycle Type:
+        <select>
+            <option>Road</option>
+            <option>MTB</option>
+            <option>Touring</option>
+            <option>Cruiser</option>
+            <option>Electric</option>
+        </select>
+    </label><br><br>
+    <button onclick="closeForm('bikeForm')">Close</button>
+</div>
+
+<div class="modal" id="historyForm"
+     style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%, -20%); background:#fff; border:1px solid #ccc; border-radius:8px; padding:20px; z-index:100;">
+    <h3>Prior Images & Analysis</h3>
+    <p>(This section can be used to display previous uploads and analysis results.)</p>
+    <button onclick="closeForm('historyForm')">Close</button>
+</div>
+
+<!-- JS INJECTION POINT -->
+
+
+</script>
+
+<script>
+    async function loadUserSettings() {
+      try {
+        const res = await fetch('/profile-settings');
+        if (!res.ok) throw new Error("Failed to fetch profile settings");
+        const data = await res.json();
+        const riderStyleSel = document.getElementById("ridingStyle");
+        const bikeTypeSel = document.getElementById("bikeType");
+        if (data.bikeType && bikeTypeSel) bikeTypeSel.value = data.bikeType;
+        if (data.ridingStyle && riderStyleSel) riderStyleSel.value = data.ridingStyle;
+      } catch (err) {
+        console.warn("Could not load profile settings:", err);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      loadUserSettings();
+      const riderStyleSel = document.getElementById("ridingStyle");
+      const bikeTypeSel = document.getElementById("bikeType");
+      if (riderStyleSel) {
+        riderStyleSel.addEventListener("change", () => saveUserSetting("ridingStyle", riderStyleSel.value));
+      }
+      if (bikeTypeSel) {
+        bikeTypeSel.addEventListener("change", () => saveUserSetting("bikeType", bikeTypeSel.value));
+      }
+    });
+</script>
+
+
+</body>
+</html>
