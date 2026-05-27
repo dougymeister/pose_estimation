@@ -50,7 +50,39 @@ function extractFeedbackMetrics(metricEntries) {
 }
 
 
+function normalizeFeedbackValue(value) {
+  return (value || "").trim().toLowerCase();
+}
+
+function getSelectedFeedbackBikeType() {
+  const analysisBikeType = document.getElementById("bikeType");
+  const feedbackBikeType = document.getElementById("filterBike");
+  return normalizeFeedbackValue(analysisBikeType?.value || feedbackBikeType?.value || "road");
+}
+
+function getSelectedFeedbackRidingStyle() {
+  const analysisRidingStyle = document.getElementById("ridingStyle");
+  const feedbackRidingStyle = document.getElementById("filterStyle");
+  return normalizeFeedbackValue(analysisRidingStyle?.value || feedbackRidingStyle?.value || "casual");
+}
+
+function setSelectValueIfOptionExists(select, value) {
+  if (!select || !value) return;
+  const normalizedValue = normalizeFeedbackValue(value);
+  const option = Array.from(select.options).find(opt => normalizeFeedbackValue(opt.value || opt.textContent) === normalizedValue);
+  if (option) select.value = option.value;
+}
+
+function syncFeedbackControlsFromAnalysis() {
+  const analysisBikeType = document.getElementById("bikeType");
+  const analysisRidingStyle = document.getElementById("ridingStyle");
+  setSelectValueIfOptionExists(document.getElementById("filterBike"), analysisBikeType?.value);
+  setSelectValueIfOptionExists(document.getElementById("filterStyle"), analysisRidingStyle?.value);
+}
+
 function loadFeedback() {
+  syncFeedbackControlsFromAnalysis();
+
   const poseMetrics = window.latestPoseMetricsSubset || window.latestPoseMetrics || {};
   const preferredUnit = window.measurementUnit || "in";
 
@@ -69,11 +101,15 @@ function loadFeedback() {
 
   console.debug("[DEBUG] loadFeedback() Metrics for feedback:", metricsForFeedback);
 
+  const bikeType = getSelectedFeedbackBikeType();
+  const ridingStyle = getSelectedFeedbackRidingStyle();
+  console.log("[FEEDBACK DEBUG] bike_type:", bikeType, "style:", ridingStyle);
+
   const payload = {
     metrics: metricsForFeedback,
     unit: preferredUnit,
-    bike_type: window.selectedBikeType || "road",
-    style: window.selectedStyle || "endurance"
+    bike_type: bikeType,
+    style: ridingStyle
   };
 
   fetch("/feedback", {
@@ -120,8 +156,8 @@ function loadFeedback() {
   const payload = {
     metrics: metricsForFeedback,
     unit: preferredUnit,
-    bike_type: window.selectedBikeType || "road",
-    style: window.selectedStyle || "endurance"
+    bike_type: bikeType,
+    style: ridingStyle
   };
 
   console.debug("[DEBUG] loadFeedback() Feedback payload:", payload);

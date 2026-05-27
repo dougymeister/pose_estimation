@@ -493,7 +493,7 @@ svg.overlay {
             <div class="card">
                 <div id="overlayContainer" style="position: relative; display: inline-block;">
 
-                  <img id="analyzeImage" src="" style="width: 100%; display: block;" onload="syncSvgSize()" />
+                  <img id="analyzeImage" src="" style="width: 100%; display: block;" onload="onAnalyzeImageReady()" />
                     <!-- new canvas for our reach–horizon overlay -->
                   <canvas id="overlayCanvas"  style="position: absolute; top: 0; left: 0; pointer-events: none;" ></canvas>
                   <svg id="svgOverlay" style="position: absolute; top: 0; left: 0; pointer-events: all;"></svg>
@@ -568,9 +568,9 @@ svg.overlay {
 
           <label for="filterStyle">Riding Style:</label>
           <select id="filterStyle">
-            <option value="endurance">Endurance</option>
-            <option value="sprinting">Sprinting</option>
-            <option value="recreational">Recreational</option>
+            <option value="casual">Casual</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="aggressive">Aggressive</option>
           </select>
 
           <button onclick="loadFeedback()">Update Feedback</button>
@@ -680,6 +680,10 @@ function syncSvgSize() {
   }
 
   renderBikeLandmarkMarkers();
+}
+
+function onAnalyzeImageReady() {
+  syncSvgSize();
   const filename = window.latestAnnotatedFilename || window.selectedOriginalFilename;
   if (filename) {
     loadBikeLandmarks(filename);
@@ -691,6 +695,7 @@ window.bikeLandmarks = window.bikeLandmarks || {};
 window.pendingBikeLandmarks = window.pendingBikeLandmarks || false;
 window.bikeLandmarkModeEnabled = false;
 window.lastLoadedBikeLandmarkFilename = window.lastLoadedBikeLandmarkFilename || null;
+window.lastBikeLandmarkLoadKey = window.lastBikeLandmarkLoadKey || null;
 window.selectedImageFile = window.selectedImageFile || null;
 window.selectedOriginalFilename = window.selectedOriginalFilename || null;
 
@@ -783,7 +788,8 @@ function renderBikeLandmarkMarkers() {
 
 async function loadBikeLandmarks(filename) {
   if (!filename) return;
-  if (window.lastLoadedBikeLandmarkFilename === filename) return;
+  if (window.lastBikeLandmarkLoadKey === filename) return;
+  window.lastBikeLandmarkLoadKey = filename;
 
   try {
     const response = await fetch(`/bike-landmarks?image=${encodeURIComponent(filename)}`);
@@ -1552,6 +1558,7 @@ let lastPoseType = "seated";
       window.latestAnnotatedFilename = null;
       window.latestPoseFilename = null;
       window.lastLoadedBikeLandmarkFilename = null;
+      window.lastBikeLandmarkLoadKey = null;
       if (window.pendingBikeLandmarks && Object.keys(window.bikeLandmarks || {}).length > 0) {
         const shouldClear = confirm("Clear unsaved bike landmarks for the newly selected image?");
         if (shouldClear) {
@@ -1573,8 +1580,6 @@ let lastPoseType = "seated";
           analyzeImage.src = uploadedDataUrl;
           analyzeImage.style.display = "block";
         }
-        renderBikeLandmarkMarkers();
-        loadBikeLandmarks(window.latestAnnotatedFilename || window.selectedOriginalFilename);
       };
       reader.readAsDataURL(file);
     }
@@ -1611,7 +1616,7 @@ let lastPoseType = "seated";
         document.getElementById("analyzeImage").src = imgUrl;
         window.latestPoseFilename = data.filename;
         window.latestAnnotatedFilename = data.filename;
-        loadBikeLandmarks(data.filename);
+        window.lastBikeLandmarkLoadKey = null;
         window.latestPoseMetrics = data.metrics;
         renderOverlayLabels(window.latestPoseMetrics, window.latestKeypoints);
         if (Object.keys(window.bikeLandmarks || {}).length > 0) {
@@ -1751,6 +1756,8 @@ function applyOverlay(layerName, buttonElement = null) {
 }
 
 
+    window.profileSettingsLoadPromise = window.profileSettingsLoadPromise || null;
+
     async function loadUserSettings() {
       try {
         const res = await fetch('/profile-settings');
@@ -1760,20 +1767,62 @@ function applyOverlay(layerName, buttonElement = null) {
         const bikeTypeSel = document.getElementById("bikeType");
         if (data.bikeType && bikeTypeSel) bikeTypeSel.value = data.bikeType;
         if (data.ridingStyle && riderStyleSel) riderStyleSel.value = data.ridingStyle;
+        if (typeof syncFeedbackControlsFromAnalysis === "function") {
+          syncFeedbackControlsFromAnalysis();
+        }
       } catch (err) {
         console.warn("Could not load profile settings:", err);
       }
     }
 
+    function loadProfileSettingsOnce() {
+      if (!window.profileSettingsLoadPromise) {
+        window.profileSettingsLoadPromise = loadUserSettings();
+      }
+      return window.profileSettingsLoadPromise;
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
-      loadUserSettings();
+      loadProfileSettingsOnce();
       const riderStyleSel = document.getElementById("ridingStyle");
       const bikeTypeSel = document.getElementById("bikeType");
+      const filterStyleSel = document.getElementById("filterStyle");
+      const filterBikeSel = document.getElementById("filterBike");
       if (riderStyleSel) {
-        riderStyleSel.addEventListener("change", () => saveUserSetting("ridingStyle", riderStyleSel.value));
+        riderStyleSel.addEventListener("change", () => {
+          if (typeof syncFeedbackControlsFromAnalysis === "function") {
+            syncFeedbackControlsFromAnalysis();
+          }
+          saveUserSetting("ridingStyle", riderStyleSel.value);
+        });
       }
       if (bikeTypeSel) {
-        bikeTypeSel.addEventListener("change", () => saveUserSetting("bikeType", bikeTypeSel.value));
+        bikeTypeSel.addEventListener("change", () => {
+          if (typeof syncFeedbackControlsFromAnalysis === "function") {
+            syncFeedbackControlsFromAnalysis();
+          }
+          saveUserSetting("bikeType", bikeTypeSel.value);
+        });
+      }
+      if (filterStyleSel && riderStyleSel) {
+        filterStyleSel.addEventListener("change", () => {
+          if (typeof setDropdownToMatchingValue === "function") {
+            setDropdownToMatchingValue(riderStyleSel, filterStyleSel.value);
+          } else if (typeof setSelectValueIfOptionExists === "function") {
+            setSelectValueIfOptionExists(riderStyleSel, filterStyleSel.value);
+          }
+          saveUserSetting("ridingStyle", riderStyleSel.value);
+        });
+      }
+      if (filterBikeSel && bikeTypeSel) {
+        filterBikeSel.addEventListener("change", () => {
+          if (typeof setDropdownToMatchingValue === "function") {
+            setDropdownToMatchingValue(bikeTypeSel, filterBikeSel.value);
+          } else if (typeof setSelectValueIfOptionExists === "function") {
+            setSelectValueIfOptionExists(bikeTypeSel, filterBikeSel.value);
+          }
+          saveUserSetting("bikeType", bikeTypeSel.value);
+        });
       }
 
        const savedUnit = localStorage.getItem("preferredUnit") || "in";
@@ -2053,7 +2102,7 @@ if (!file && !window.latestPoseFilename) {
 
     window.latestPoseFilename = filename;
     window.latestAnnotatedFilename = filename;
-    loadBikeLandmarks(filename);
+    window.lastBikeLandmarkLoadKey = null;
     window.latestPoseMetrics = metrics;
     window.latestPoseKeypoints = keypoints;
     window.latestPoseMetricsSubset = metrics;
@@ -2172,6 +2221,79 @@ function setMeasurementUnit(value) {
     window.referenceSize.unit = value;
   }
   console.log("Measurement unit set to:", value);
+}
+
+function normalizeFeedbackControlValue(value) {
+  return (value || "").trim().toLowerCase();
+}
+
+function setDropdownToMatchingValue(select, value) {
+  if (!select || !value) return;
+  const normalized = normalizeFeedbackControlValue(value);
+  const option = Array.from(select.options).find(opt => {
+    return normalizeFeedbackControlValue(opt.value || opt.textContent) === normalized
+      || normalizeFeedbackControlValue(opt.textContent) === normalized;
+  });
+  if (option) select.value = option.value;
+}
+
+function getVisibleFeedbackSelection(primaryId, secondaryId, fallbackValue) {
+  const primary = document.getElementById(primaryId);
+  const secondary = document.getElementById(secondaryId);
+  const selected = primary?.value || secondary?.value || fallbackValue;
+  return normalizeFeedbackControlValue(selected);
+}
+
+function syncFeedbackDropdowns() {
+  const bikeType = document.getElementById("bikeType");
+  const filterBike = document.getElementById("filterBike");
+  const ridingStyle = document.getElementById("ridingStyle");
+  const filterStyle = document.getElementById("filterStyle");
+
+  if (bikeType && filterBike) setDropdownToMatchingValue(filterBike, bikeType.value);
+  if (ridingStyle && filterStyle) setDropdownToMatchingValue(filterStyle, ridingStyle.value);
+}
+
+function loadFeedback() {
+  syncFeedbackDropdowns();
+
+  const poseMetrics = window.latestPoseMetricsSubset || window.latestPoseMetrics || {};
+  const preferredUnit = window.measurementUnit || "in";
+
+  let metricsForFeedback;
+  if (poseMetrics.all_fit_points && Object.keys(poseMetrics).length === 1) {
+    metricsForFeedback = window.latestPoseMetrics;
+  } else if (Array.isArray(poseMetrics) && typeof extractFeedbackMetrics === "function") {
+    metricsForFeedback = extractFeedbackMetrics(poseMetrics);
+  } else if (Array.isArray(poseMetrics.distances) && typeof extractFeedbackMetrics === "function") {
+    metricsForFeedback = extractFeedbackMetrics(poseMetrics.distances);
+  } else {
+    metricsForFeedback = poseMetrics;
+  }
+
+  const bikeType = getVisibleFeedbackSelection("bikeType", "filterBike", "road");
+  const ridingStyle = getVisibleFeedbackSelection("ridingStyle", "filterStyle", "casual");
+  console.log("[FEEDBACK DEBUG] bike_type:", bikeType, "style:", ridingStyle);
+
+  fetch("/feedback", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      metrics: metricsForFeedback,
+      unit: preferredUnit,
+      bike_type: bikeType,
+      style: ridingStyle
+    })
+  })
+    .then(res => res.json())
+    .then(data => {
+      console.log("[DEBUG] Received feedback data:", data);
+      renderFeedbackTable(data.feedback);
+      window.latestFeedback = data.feedback;
+    })
+    .catch(err => {
+      console.error("Error loading feedback:", err.message);
+    });
 }
 
 
