@@ -704,6 +704,16 @@ window.lastBikeLandmarkLoadKey = window.lastBikeLandmarkLoadKey || null;
 window.selectedImageFile = window.selectedImageFile || null;
 window.selectedOriginalFilename = window.selectedOriginalFilename || null;
 
+function isNoPersonPoseResponse(data) {
+  return data?.pose_detected === false || data?.reason === "no_person_pose";
+}
+
+function showNoPersonPoseMessage(data) {
+  const message = data?.message || "No rider/person pose was detected. Use Analyze Bike Only for bicycle-only images, or upload a side-view image with a rider for pose analysis.";
+  console.warn("[PROCESS] No rider/person pose detected:", data);
+  alert(message);
+}
+
 function resetAnalysisForNewImage() {
   console.log("[RESET] Clearing previous analysis for new image");
 
@@ -1756,6 +1766,11 @@ let lastPoseType = "seated";
     })
     .then(response => response.json())
     .then(async data => {
+        if (isNoPersonPoseResponse(data)) {
+            showNoPersonPoseMessage(data);
+            return;
+        }
+
         if (data.error) {
             alert("Annotation failed.");
             return;
@@ -1767,7 +1782,9 @@ let lastPoseType = "seated";
         window.latestAnnotatedFilename = data.filename;
         window.lastBikeLandmarkLoadKey = null;
         window.latestPoseMetrics = data.metrics;
-        renderOverlayLabels(window.latestPoseMetrics, window.latestKeypoints);
+        window.latestPoseKeypoints = data.keypoints || [];
+        window.latestKeypoints = window.latestPoseKeypoints;
+        renderOverlayLabels(window.latestPoseMetrics, window.latestPoseKeypoints);
         if (Object.keys(window.bikeLandmarks || {}).length > 0) {
           try {
             await carryBikeLandmarksToProcessedFilename(data.filename);
@@ -2247,6 +2264,16 @@ if (!file && !window.latestPoseFilename) {
     }
 
     const result = await response.json();
+    if (isNoPersonPoseResponse(result)) {
+      showNoPersonPoseMessage(result);
+      return;
+    }
+
+    if (result.error || result.success === false) {
+      alert(result.message || "Pose annotation failed. Check your input.");
+      return;
+    }
+
     const { filename, metrics, keypoints } = result;
 
     window.latestPoseFilename = filename;

@@ -464,6 +464,30 @@
       }
     },
     "key": "bike_wheelbase"
+  },
+  "knee_pedal_spindle_offset": {
+    "label": "Knee to Pedal Spindle Offset",
+    "road": {
+      "endurance": {
+        "min": 0,
+        "max": 1.25,
+        "units": "in",
+        "explanation": "Horizontal knee-to-pedal-spindle offset with the crank near horizontal. Use as a comfort and knee-tracking check, not an absolute prescription."
+      },
+      "intermediate": {
+        "min": 0,
+        "max": 1.25,
+        "units": "in",
+        "explanation": "Horizontal offset from selected knee to pedal spindle. Best interpreted with crank near 3 o'clock or 9 o'clock."
+      },
+      "casual": {
+        "min": 0,
+        "max": 1.5,
+        "units": "in",
+        "explanation": "Horizontal offset between the selected visible knee and pedal spindle. Use only when the crank is near horizontal; small offsets are usually preferred for comfort."
+      }
+    },
+    "key": "knee_pedal_spindle_offset"
   }
 }
 

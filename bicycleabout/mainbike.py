@@ -404,6 +404,127 @@ def calculate_bike_landmark_metrics(bike_landmarks, cm_per_px=None):
     return metrics
 
 
+def format_signed_offset_label(signed_value, unit_label):
+    if signed_value is None:
+        return None
+
+    abs_value = abs(float(signed_value))
+    if abs_value < 0.05:
+        return f"0.0 {unit_label} aligned"
+
+    direction = "ahead" if signed_value > 0 else "behind"
+    return f"{abs_value:.1f} {unit_label} {direction}"
+
+
+def compute_knee_pedal_spindle_offset(keypoints, visible, bike_landmarks, cm_per_px=None):
+    pedal = get_bike_landmark_point(bike_landmarks, "visible_pedal_spindle")
+    bottom_bracket = get_bike_landmark_point(bike_landmarks, "bottom_bracket")
+
+    print(f"[ KOPS ] bottom_bracket: {bottom_bracket}")
+    print(f"[ KOPS ] visible_pedal_spindle: {pedal}")
+
+    if pedal is None or bottom_bracket is None:
+        print("[ KOPS ] metric valid: False")
+        return None
+
+    dx = pedal[0] - bottom_bracket[0]
+    dy = pedal[1] - bottom_bracket[1]
+    if dx == 0 and dy == 0:
+        print("[ KOPS ] metric valid: False")
+        return None
+
+    crank_angle_deg = float(np.degrees(np.arctan2(dy, dx)))
+    angle_from_horizontal = min(abs(crank_angle_deg), abs(abs(crank_angle_deg) - 180.0))
+    print(f"[ KOPS ] crank_angle_deg: {crank_angle_deg}")
+
+    if angle_from_horizontal > 15:
+        print("[ KOPS ] metric valid: False")
+        return None
+
+    candidate_knees = []
+    for knee_name, knee_idx in (("left_knee", 13), ("right_knee", 14)):
+        if not is_valid_point(knee_idx, keypoints, visible):
+            continue
+        knee = [float(keypoints[knee_idx][0]), float(keypoints[knee_idx][1])]
+        distance_to_pedal = float(np.linalg.norm(np.array(knee) - np.array(pedal)))
+        candidate_knees.append((distance_to_pedal, knee_name, knee_idx, knee))
+
+    if not candidate_knees:
+        print("[ KOPS ] selected_knee: None")
+        print("[ KOPS ] metric valid: False")
+        return None
+
+    _, selected_knee, selected_knee_index, knee = min(candidate_knees, key=lambda item: item[0])
+    signed_offset_px = float(knee[0] - pedal[0])
+    distance_px = abs(signed_offset_px)
+    signed_offset_cm = signed_offset_px * cm_per_px if cm_per_px else None
+    distance_cm = distance_px * cm_per_px if cm_per_px else None
+    signed_offset_in = signed_offset_cm / 2.54 if signed_offset_cm is not None else None
+    distance_in = distance_cm / 2.54 if distance_cm is not None else None
+
+    if distance_px < 2:
+        direction = "knee_aligned"
+    elif signed_offset_px > 0:
+        direction = "knee_ahead_of_pedal"
+    else:
+        direction = "knee_behind_pedal"
+
+    label_px = format_signed_offset_label(signed_offset_px, "px")
+    label_cm = format_signed_offset_label(signed_offset_cm, "cm")
+    label_in = format_signed_offset_label(signed_offset_in, "in")
+
+    metric = {
+        "key": "knee_pedal_spindle_offset",
+        "name": "knee_pedal_spindle_offset",
+        "metric": "Knee to Pedal Spindle Offset",
+        "layer": "knee_pedal_spindle",
+        "type": "horizontal_offset",
+        "selected_knee": selected_knee,
+        "selected_knee_index": selected_knee_index,
+        "pedal_landmark": "visible_pedal_spindle",
+        "bottom_bracket_landmark": "bottom_bracket",
+        "distance_px": distance_px,
+        "signed_offset_px": signed_offset_px,
+        "distance_cm": distance_cm,
+        "signed_offset_cm": signed_offset_cm,
+        "distance_in": distance_in,
+        "signed_offset_in": signed_offset_in,
+        "direction": direction,
+        "crank_angle_deg": crank_angle_deg,
+        "valid": True,
+        "status_note": "Uses the selected visible knee closest to the visible pedal spindle. Best used when the crank is near horizontal.",
+        "label": label_in or label_cm or label_px,
+        "label_px": label_px,
+        "label_cm": label_cm,
+        "label_in": label_in,
+        "points": ["selected_knee", "visible_pedal_spindle"],
+        "landmark_points": ["visible_pedal_spindle", "bottom_bracket"],
+        "line_segments": [
+            [knee[0], knee[1], knee[0], pedal[1]],
+            [knee[0], pedal[1], pedal[0], pedal[1]]
+        ],
+        "midpoint": [(knee[0] + pedal[0]) / 2, pedal[1]],
+        "style": "dashed",
+        "color": "#00d4ff",
+        "thickness": 3
+    }
+
+    print(f"[ KOPS ] selected_knee: {selected_knee}")
+    print(f"[ KOPS ] signed_offset_in: {signed_offset_in}")
+    print("[ KOPS ] metric valid: True")
+    return metric
+
+
+def append_kops_metric(all_metrics, keypoints, visible, bike_landmarks, cm_per_px=None):
+    metric = compute_knee_pedal_spindle_offset(keypoints, visible, bike_landmarks, cm_per_px)
+    if metric and metric.get("valid"):
+        all_metrics["knee_pedal_spindle"] = {
+            "distances": [metric],
+            "angles": []
+        }
+    return metric
+
+
 def load_bike_landmarks_for_filename(filename):
     stem = Path(Path(filename).name).stem
     landmarks_path = MEDIA_DIR / f"{stem}_bike_landmarks.json"
@@ -664,6 +785,27 @@ def validate_pose_geometry(all_metrics):
     return errors
 
 
+NO_PERSON_POSE_MESSAGE = (
+    "No rider/person pose was detected. Use Analyze Bike Only for bicycle-only images, "
+    "or upload a side-view image with a rider for pose analysis."
+)
+
+
+def no_person_pose_response(filename=None, pose_quality=None):
+    payload = {
+        "success": False,
+        "pose_detected": False,
+        "reason": "no_person_pose",
+        "message": NO_PERSON_POSE_MESSAGE,
+        "filename": filename,
+        "keypoints": [],
+        "metrics": {}
+    }
+    if pose_quality is not None:
+        payload["pose_quality"] = pose_quality
+    return JSONResponse(status_code=200, content=payload)
+
+
 @app.post("/annotate")
 async def annotate_file(
         file: UploadFile = File(...),
@@ -693,20 +835,18 @@ async def annotate_file(
         visible_raw = results[0].keypoints.conf
 
         if keypoints_raw is None or visible_raw is None:
-            raise ValueError("No keypoints found in pose result.")
+            return no_person_pose_response(input_path.name)
+
+        try:
+            if len(keypoints_raw) == 0 or len(visible_raw) == 0:
+                return no_person_pose_response(input_path.name)
+        except TypeError:
+            return no_person_pose_response(input_path.name)
 
         best_idx, person_selection = select_best_person_index(results[0])
 
         if best_idx is None:
-            return JSONResponse(status_code=200, content={
-                "filename": input_path.name,
-                "message": (
-                    "No rider/person was detected. Retake the photo side-on with the full rider visible."
-                ),
-                "keypoints": [],
-                "metrics": {},
-                "pose_quality": person_selection
-            })
+            return no_person_pose_response(input_path.name, person_selection)
 
         keypoints = keypoints_raw[best_idx].cpu().numpy().tolist()
         visible = visible_raw[best_idx].cpu().numpy().tolist()
@@ -843,6 +983,7 @@ async def annotate_file(
         bike_landmarks, _ = load_bike_landmarks_for_filename(input_path.name)
         if bike_landmarks:
             append_bike_landmark_metrics(all_metrics, bike_landmarks, cm_per_px)
+            append_kops_metric(all_metrics, keypoints, visible, bike_landmarks, cm_per_px)
 
         # ---------------------------------------------------------
         # GEOMETRY SANITY CHECK
@@ -882,6 +1023,7 @@ async def annotate_file(
         with open(json_output_path, "w", encoding="utf-8") as f:
             json.dump({
                 "keypoints": keypoints,
+                "visible": visible,
                 "labels": all_labels,
                 "metrics": all_metrics,
                 "cm_per_px": cm_per_px,
@@ -1255,6 +1397,10 @@ async def save_bike_landmarks(request: Request):
         cm_per_px = layers_data.get("cm_per_px") or infer_cm_per_px_from_metrics(all_metrics)
         bike_metrics = append_bike_landmark_metrics(all_metrics, bike_landmarks, cm_per_px)
         print(f"[BIKE LANDMARK] Computed bike landmark metrics: {bike_metrics}")
+        keypoints = layers_data.get("keypoints") or []
+        visible = layers_data.get("visible") or []
+        if keypoints and visible:
+            append_kops_metric(all_metrics, keypoints, visible, bike_landmarks, cm_per_px)
 
         with open(layers_path, "w", encoding="utf-8") as f:
             json.dump(layers_data, f, indent=2)
@@ -1353,6 +1499,10 @@ async def recalculate_bike_metrics(request: Request):
     bike_landmarks = landmarks_data.get("bike_landmarks", {})
     bike_metrics = append_bike_landmark_metrics(all_metrics, bike_landmarks, cm_per_px)
     print(f"[BIKE LANDMARK] Computed bike landmark metrics: {bike_metrics}")
+    keypoints = layers_data.get("keypoints") or []
+    visible = layers_data.get("visible") or []
+    if keypoints and visible:
+        append_kops_metric(all_metrics, keypoints, visible, bike_landmarks, cm_per_px)
 
     with open(layers_path, "w", encoding="utf-8") as f:
         json.dump(layers_data, f, indent=2)
