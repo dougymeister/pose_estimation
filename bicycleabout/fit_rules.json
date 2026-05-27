@@ -5,19 +5,19 @@
       "endurance": {
         "min": 140,
         "max": 150,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Left knee angle affects power and joint safety. Adjust saddle height if outside range."
       },
       "casual": {
         "min": 135,
         "max": 155,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Casual riders may prefer a slightly more upright knee angle for comfort."
       },
       "intermediate": {
         "min": 138,
         "max": 152,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Intermediate fit allows balance between efficiency and comfort."
       }
     },
@@ -25,7 +25,7 @@
       "default": {
         "min": 135,
         "max": 155,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Commuter bike fit allows broader knee angle for upright posture."
       }
     },
@@ -33,7 +33,7 @@
       "default": {
         "min": 130,
         "max": 150,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Mountain bike knee angles are slightly more compressed to allow maneuverability."
       }
     },
@@ -45,19 +45,19 @@
       "endurance": {
         "min": 140,
         "max": 150,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Right knee angle should match left side for symmetry and comfort."
       },
       "casual": {
         "min": 135,
         "max": 155,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Casual riders may prefer a slightly more upright knee angle for comfort."
       },
       "intermediate": {
         "min": 138,
         "max": 152,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Intermediate fit allows balance between efficiency and comfort."
       }
     },
@@ -65,7 +65,7 @@
       "default": {
         "min": 135,
         "max": 155,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Commuter bike fit allows broader knee angle for upright posture."
       }
     },
@@ -73,7 +73,7 @@
       "default": {
         "min": 130,
         "max": 150,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Mountain bike knee angles are slightly more compressed to allow maneuverability."
       }
     },
@@ -85,19 +85,19 @@
       "endurance": {
         "min": 90,
         "max": 110,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Left hip angle helps assess upper body compression and comfort."
       },
       "casual": {
         "min": 95,
         "max": 120,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Casual riders benefit from a more open hip angle."
       },
       "intermediate": {
         "min": 92,
         "max": 112,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Intermediate riders benefit from a moderate lean."
       }
     },
@@ -105,7 +105,7 @@
       "default": {
         "min": 95,
         "max": 115,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Commuter setups favor comfort and visibility."
       }
     },
@@ -113,7 +113,7 @@
       "default": {
         "min": 85,
         "max": 105,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Mountain bike fits allow more flex for aggressive terrain."
       }
     },
@@ -125,19 +125,19 @@
       "endurance": {
         "min": 90,
         "max": 110,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Right hip angle should balance with the left for efficient pedaling."
       },
       "casual": {
         "min": 95,
         "max": 120,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Casual riders benefit from a more open hip angle."
       },
       "intermediate": {
         "min": 92,
         "max": 112,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Intermediate riders benefit from a moderate lean."
       }
     },
@@ -145,7 +145,7 @@
       "default": {
         "min": 95,
         "max": 115,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Commuter setups favor comfort and visibility."
       }
     },
@@ -153,7 +153,7 @@
       "default": {
         "min": 85,
         "max": 105,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Mountain bike fits allow more flex for aggressive terrain."
       }
     },
@@ -165,8 +165,14 @@
       "endurance": {
         "min": 80,
         "max": 100,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Left shoulder angle affects upper body stability and comfort. Adjust reach or handlebar height if outside range."
+      },
+      "casual": {
+        "min": 45,
+        "max": 95,
+        "units": "\u00B0",
+        "explanation": "Casual riders often use a more relaxed upper-body posture. Use this as a comfort and symmetry check, not a strict fit prescription."
       }
     },
     "key": "shoulder_angle_left_11_5_7"
@@ -177,8 +183,14 @@
       "endurance": {
         "min": 80,
         "max": 100,
-        "units": "°",
+        "units": "\u00B0",
         "explanation": "Right shoulder angle should match the left for symmetry and balance. Consider handlebar adjustments if needed."
+      },
+      "casual": {
+        "min": 45,
+        "max": 95,
+        "units": "\u00B0",
+        "explanation": "Casual riders often use a more relaxed upper-body posture. Use this as a comfort and symmetry check, not a strict fit prescription."
       }
     },
     "key": "shoulder_angle_right_12_6_8"
@@ -191,6 +203,12 @@
         "max": 32,
         "units": "in",
         "explanation": "Projected hip-to-ankle distance used as a consistency check for saddle/pedal reach."
+      },
+      "casual": {
+        "min": 19,
+        "max": 34,
+        "units": "in",
+        "explanation": "Projected hip-to-ankle distance. This is rider-size and crank-position dependent, so use mainly as a consistency check."
       }
     },
     "key": "leg_length_left_11_15"
@@ -203,6 +221,12 @@
         "max": 32,
         "units": "in",
         "explanation": "Projected hip-to-ankle distance used to compare left/right leg extension."
+      },
+      "casual": {
+        "min": 19,
+        "max": 34,
+        "units": "in",
+        "explanation": "Projected hip-to-ankle distance. This is rider-size and crank-position dependent, so use mainly as a consistency check."
       }
     },
     "key": "leg_length_right_12_16"
@@ -215,6 +239,12 @@
         "max": 20,
         "units": "in",
         "explanation": "Projected knee-to-ankle distance helps validate lower-leg tracking and pose quality."
+      },
+      "casual": {
+        "min": 11,
+        "max": 21,
+        "units": "in",
+        "explanation": "Projected knee-to-ankle distance. Use mainly as a lower-leg pose quality and side-to-side consistency check."
       }
     },
     "key": "knee_length_left_13_15"
@@ -227,6 +257,12 @@
         "max": 20,
         "units": "in",
         "explanation": "Projected knee-to-ankle distance helps validate lower-leg tracking and pose quality."
+      },
+      "casual": {
+        "min": 11,
+        "max": 21,
+        "units": "in",
+        "explanation": "Projected knee-to-ankle distance. Use mainly as a lower-leg pose quality and side-to-side consistency check."
       }
     },
     "key": "knee_length_right_14_16"
@@ -239,6 +275,12 @@
         "max": 24,
         "units": "in",
         "explanation": "Projected shoulder-to-wrist reach. Use as a rider posture and symmetry check, not full bike cockpit reach."
+      },
+      "casual": {
+        "min": 13,
+        "max": 25,
+        "units": "in",
+        "explanation": "Projected shoulder-to-wrist reach. For casual riding, use this to flag an obviously stretched or cramped upper body."
       }
     },
     "key": "arm_reach_distance_left_5_9"
@@ -251,6 +293,12 @@
         "max": 24,
         "units": "in",
         "explanation": "Projected shoulder-to-wrist reach. Use as a rider posture and symmetry check, not full bike cockpit reach."
+      },
+      "casual": {
+        "min": 13,
+        "max": 25,
+        "units": "in",
+        "explanation": "Projected shoulder-to-wrist reach. For casual riding, use this to compare side-to-side posture."
       }
     },
     "key": "arm_reach_distance_right_6_10"
@@ -263,6 +311,12 @@
         "max": 14,
         "units": "in",
         "explanation": "Projected shoulder-to-elbow distance. Useful as an upper-arm pose quality and posture check."
+      },
+      "casual": {
+        "min": 8,
+        "max": 15,
+        "units": "in",
+        "explanation": "Projected shoulder-to-elbow distance. Use as an upper-arm posture quality check."
       }
     },
     "key": "reach_distance_left_5_7"
@@ -275,6 +329,12 @@
         "max": 14,
         "units": "in",
         "explanation": "Projected shoulder-to-elbow distance. Useful as an upper-arm pose quality and posture check."
+      },
+      "casual": {
+        "min": 8,
+        "max": 15,
+        "units": "in",
+        "explanation": "Projected shoulder-to-elbow distance. Use as an upper-arm posture quality check."
       }
     },
     "key": "reach_distance_right_6_8"
@@ -287,6 +347,12 @@
         "max": 16,
         "units": "in",
         "explanation": "Horizontal projection of shoulder-to-wrist reach. Use for relative posture, not full handlebar reach."
+      },
+      "casual": {
+        "min": 7,
+        "max": 16,
+        "units": "in",
+        "explanation": "Horizontal shoulder-to-wrist reach. Casual riders usually favor a relaxed reach with less forward stretch."
       }
     },
     "key": "arm_reach_distance_horizon_left_5_9"
@@ -299,6 +365,12 @@
         "max": 16,
         "units": "in",
         "explanation": "Horizontal projection of shoulder-to-wrist reach. Use for relative posture, not full handlebar reach."
+      },
+      "casual": {
+        "min": 7,
+        "max": 16,
+        "units": "in",
+        "explanation": "Horizontal shoulder-to-wrist reach. Casual riders usually favor a relaxed reach with less forward stretch."
       }
     },
     "key": "arm_reach_distance_horizon_right_6_10"
@@ -311,6 +383,12 @@
         "max": 28,
         "units": "in",
         "explanation": "Manual saddle-center to handlebar-center distance. Use with rider reach and comfort feedback."
+      },
+      "casual": {
+        "min": 18,
+        "max": 29,
+        "units": "in",
+        "explanation": "Manual saddle-center to handlebar-center distance. For casual riders, use this as a comfort-oriented cockpit reach check, not a precise prescription."
       }
     },
     "key": "bike_saddle_to_bar_distance"
@@ -323,6 +401,12 @@
         "max": 26,
         "units": "in",
         "explanation": "Horizontal cockpit reach from saddle center to handlebar center."
+      },
+      "casual": {
+        "min": 15,
+        "max": 26,
+        "units": "in",
+        "explanation": "Horizontal cockpit reach from saddle center to handlebar center. Casual riders often benefit from a shorter, more relaxed reach."
       }
     },
     "key": "bike_saddle_to_bar_horizontal_reach"
@@ -335,6 +419,12 @@
         "max": 6,
         "units": "in",
         "explanation": "Vertical difference between saddle center and handlebar center."
+      },
+      "casual": {
+        "min": -2,
+        "max": 4,
+        "units": "in",
+        "explanation": "Vertical difference between saddle center and handlebar center. For casual comfort, bars near saddle height or slightly higher/lower are usually more comfortable than a large drop."
       }
     },
     "key": "bike_saddle_to_bar_vertical_drop"
@@ -347,6 +437,12 @@
         "max": 34,
         "units": "in",
         "explanation": "Manual bottom-bracket to saddle-center distance."
+      },
+      "casual": {
+        "min": 24,
+        "max": 34,
+        "units": "in",
+        "explanation": "Manual bottom-bracket to saddle-center distance. This is strongly rider-size dependent, so use mainly as a consistency check."
       }
     },
     "key": "bike_saddle_height"
@@ -359,8 +455,15 @@
         "max": 44,
         "units": "in",
         "explanation": "Manual rear-axle to front-axle distance."
+      },
+      "casual": {
+        "min": 36,
+        "max": 46,
+        "units": "in",
+        "explanation": "Manual rear-axle to front-axle distance. This is mostly a bike geometry check, not a rider fit target."
       }
     },
     "key": "bike_wheelbase"
   }
 }
+

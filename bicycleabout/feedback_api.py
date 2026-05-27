@@ -15,6 +15,9 @@ def load_fit_rules() -> dict:
 
 
 def convert_unit(value: float, from_unit: str, to_unit: str) -> float:
+    from_unit = normalize_display_unit(from_unit)
+    to_unit = normalize_display_unit(to_unit)
+
     if from_unit == to_unit:
         return value
     elif from_unit == "cm" and to_unit == "in":
@@ -23,6 +26,12 @@ def convert_unit(value: float, from_unit: str, to_unit: str) -> float:
         return value * 2.54
     else:
         return value  # fallback if unit types are unknown
+
+
+def normalize_display_unit(unit: str) -> str:
+    if not isinstance(unit, str):
+        return unit
+    return unit.replace("\u00C2\u00B0", "\u00B0").replace("\\u00B0", "\u00B0")
 
 
 @router.post("/feedback")
@@ -128,7 +137,7 @@ def generate_feedback(metrics: Dict[str, Any], unit: str = "cm", bike_type: str 
             target_min = rule_entry.get("min")
             target_max = rule_entry.get("max")
             explanation = rule_entry.get("explanation", rule.get("explanation", ""))
-            rule_unit = rule_entry.get("units", rule.get("units", unit))
+            rule_unit = normalize_display_unit(rule_entry.get("units", rule.get("units", unit)))
 
             # Convert value to match rule unit
             converted_value = convert_unit(value, from_unit=unit, to_unit=rule_unit)
