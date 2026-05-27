@@ -684,7 +684,11 @@ function syncSvgSize() {
 
 function onAnalyzeImageReady() {
   syncSvgSize();
-  const filename = window.latestAnnotatedFilename || window.selectedOriginalFilename;
+  const img = document.getElementById("analyzeImage");
+  const isLocalPreview = !!img?.src && img.src.startsWith("data:");
+  const filename = isLocalPreview
+    ? window.selectedOriginalFilename
+    : (window.latestAnnotatedFilename || window.selectedOriginalFilename);
   if (filename) {
     loadBikeLandmarks(filename);
   }
@@ -698,6 +702,61 @@ window.lastLoadedBikeLandmarkFilename = window.lastLoadedBikeLandmarkFilename ||
 window.lastBikeLandmarkLoadKey = window.lastBikeLandmarkLoadKey || null;
 window.selectedImageFile = window.selectedImageFile || null;
 window.selectedOriginalFilename = window.selectedOriginalFilename || null;
+
+function resetAnalysisForNewImage() {
+  console.log("[RESET] Clearing previous analysis for new image");
+
+  window.latestPoseMetrics = {};
+  window.latestPoseMetricsSubset = {};
+  window.latestPoseKeypoints = [];
+  window.latestKeypoints = [];
+  window.latestFeedback = [];
+  window.latestAnnotatedFilename = null;
+  window.latestPoseFilename = null;
+  window.currentActiveButton = null;
+  window.bikeLandmarks = {};
+  window.pendingBikeLandmarks = false;
+  window.lastLoadedBikeLandmarkFilename = null;
+  window.lastBikeLandmarkLoadKey = null;
+
+  if (window.currentActiveButtons) {
+    window.currentActiveButtons.forEach(btnId => {
+      const btn = document.getElementById(btnId);
+      if (btn) btn.classList.remove("active-overlay");
+    });
+    window.currentActiveButtons.clear();
+  }
+
+  document.querySelectorAll(".overlay-btn.active-overlay").forEach(btn => {
+    if (btn.id !== "bikeLandmarkModeBtn") {
+      btn.classList.remove("active-overlay");
+    }
+  });
+  const bikeModeBtn = document.getElementById("bikeLandmarkModeBtn");
+  if (bikeModeBtn) {
+    bikeModeBtn.classList.toggle("active-overlay", !!window.bikeLandmarkModeEnabled);
+  }
+
+  const svg = document.getElementById("svgOverlay");
+  if (svg) {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+  }
+
+  const canvas = document.getElementById("overlayCanvas");
+  const ctx2d = canvas?.getContext("2d");
+  if (canvas && ctx2d) {
+    ctx2d.clearRect(0, 0, canvas.width || canvas.clientWidth, canvas.height || canvas.clientHeight);
+  }
+
+  if (window.feedbackTable?.clear) {
+    window.feedbackTable.clear().draw();
+  } else if (window.jQuery && $.fn?.DataTable && $.fn.DataTable.isDataTable("#feedbackTable")) {
+    $("#feedbackTable").DataTable().clear().draw();
+  } else {
+    const feedbackBody = document.querySelector("#feedbackTable tbody");
+    if (feedbackBody) feedbackBody.innerHTML = "";
+  }
+}
 
 function toggleBikeLandmarkMode() {
   window.bikeLandmarkModeEnabled = !window.bikeLandmarkModeEnabled;
@@ -1552,23 +1611,11 @@ let lastPoseType = "seated";
     function handleFileUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
+      resetAnalysisForNewImage();
       uploadedFile = file;
       window.selectedImageFile = file;
       window.selectedOriginalFilename = file.name;
       window.latestAnnotatedFilename = null;
-      window.latestPoseFilename = null;
-      window.lastLoadedBikeLandmarkFilename = null;
-      window.lastBikeLandmarkLoadKey = null;
-      if (window.pendingBikeLandmarks && Object.keys(window.bikeLandmarks || {}).length > 0) {
-        const shouldClear = confirm("Clear unsaved bike landmarks for the newly selected image?");
-        if (shouldClear) {
-          window.bikeLandmarks = {};
-          window.pendingBikeLandmarks = false;
-        }
-      } else {
-        window.bikeLandmarks = {};
-        window.pendingBikeLandmarks = false;
-      }
       const reader = new FileReader();
       reader.onload = function(e) {
         uploadedDataUrl = e.target.result;
