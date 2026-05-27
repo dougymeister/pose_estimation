@@ -65,6 +65,16 @@ POSE_DISTANCE_LAYERS = {
     #"saddle_to_bar_distance": [(1, 0)],
 }
 
+BIKE_LANDMARK_DISTANCE_PAIRS = {
+    "bike_saddle_to_bar_distance": ("saddle_center", "handlebar_center", "straight"),
+    "bike_saddle_to_bar_horizontal_reach": ("saddle_center", "handlebar_center", "horizontal"),
+    "bike_saddle_to_bar_vertical_drop": ("saddle_center", "handlebar_center", "vertical"),
+    "bike_saddle_height": ("bottom_bracket", "saddle_center", "straight"),
+    "bike_wheelbase": ("rear_axle", "front_axle", "straight"),
+    "bike_bottom_bracket_to_front_axle": ("bottom_bracket", "front_axle", "straight"),
+    "bike_bottom_bracket_to_rear_axle": ("bottom_bracket", "rear_axle", "straight"),
+}
+
 pose_model = YOLO("yolo11m-pose.pt")    #pose_model = YOLO("yolo26m-pose.pt").to("cpu")
 
 '''
@@ -301,6 +311,119 @@ def generate_layer_annotations(keypoints, visible, image, layer, cm_per_px):
                     # metrics["distances_by_side"][f"{layer}{suffix}"].append(copy_h)
 
     return labels, metrics
+
+
+def infer_cm_per_px_from_metrics(all_metrics):
+    for layer_data in all_metrics.values():
+        if not isinstance(layer_data, dict):
+            continue
+        for distance in layer_data.get("distances", []):
+            distance_px = distance.get("distance_px")
+            distance_cm = distance.get("distance_cm")
+            if distance_px and distance_cm:
+                return float(distance_cm) / float(distance_px)
+    return None
+
+
+def get_bike_landmark_point(bike_landmarks, landmark_type):
+    point = bike_landmarks.get(landmark_type)
+    if not isinstance(point, dict) or point.get("visible") is False:
+        return None
+
+    try:
+        return [float(point["x"]), float(point["y"])]
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def make_bike_landmark_distance_entry(metric_key, point_a, point_b, mode, cm_per_px=None, point_labels=None):
+    dx = float(point_b[0] - point_a[0])
+    dy = float(point_b[1] - point_a[1])
+
+    if mode == "horizontal":
+        distance_px = abs(dx)
+        line_segments = [[point_a[0], point_a[1], point_b[0], point_a[1]]]
+        midpoint = [(point_a[0] + point_b[0]) / 2, point_a[1]]
+        distance_type = "horizontal"
+    elif mode == "vertical":
+        distance_px = abs(dy)
+        line_segments = [[point_b[0], point_a[1], point_b[0], point_b[1]]]
+        midpoint = [point_b[0], (point_a[1] + point_b[1]) / 2]
+        distance_type = "vertical"
+    else:
+        distance_px = float(np.linalg.norm(np.array(point_a) - np.array(point_b)))
+        line_segments = [[point_a[0], point_a[1], point_b[0], point_b[1]]]
+        midpoint = [(point_a[0] + point_b[0]) / 2, (point_a[1] + point_b[1]) / 2]
+        distance_type = "straight"
+
+    distance_cm = distance_px * cm_per_px if cm_per_px else None
+    distance_in = distance_cm / 2.54 if distance_cm is not None else None
+
+    return {
+        "key": metric_key,
+        "name": metric_key,
+        "type": distance_type,
+        "points": point_labels or [],
+        "landmark_points": point_labels or [],
+        "distance_px": distance_px,
+        "distance_cm": distance_cm,
+        "distance_in": distance_in,
+        "label": distance_cm is not None and f"{distance_cm:.1f} cm" or f"{int(distance_px)} px",
+        "label_px": f"{int(distance_px)} px",
+        "label_cm": distance_cm is not None and f"{distance_cm:.1f} cm",
+        "label_in": distance_in is not None and f"{distance_in:.2f} in",
+        "midpoint": midpoint,
+        "line_segments": line_segments,
+        "style": "solid" if mode == "straight" else "dashed",
+        "color": "#00d4ff",
+        "thickness": 3,
+    }
+
+
+def calculate_bike_landmark_metrics(bike_landmarks, cm_per_px=None):
+    metrics = {"distances": [], "angles": []}
+
+    for metric_key, (start_type, end_type, mode) in BIKE_LANDMARK_DISTANCE_PAIRS.items():
+        point_a = get_bike_landmark_point(bike_landmarks, start_type)
+        point_b = get_bike_landmark_point(bike_landmarks, end_type)
+        if point_a is None or point_b is None:
+            continue
+
+        metrics["distances"].append(
+            make_bike_landmark_distance_entry(
+                metric_key,
+                point_a,
+                point_b,
+                mode,
+                cm_per_px,
+                [start_type, end_type]
+            )
+        )
+
+    return metrics
+
+
+def load_bike_landmarks_for_filename(filename):
+    stem = Path(Path(filename).name).stem
+    landmarks_path = MEDIA_DIR / f"{stem}_bike_landmarks.json"
+    if not landmarks_path.exists():
+        return {}, None
+
+    with open(landmarks_path, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+
+    return payload.get("bike_landmarks", {}), payload
+
+
+def append_bike_landmark_metrics(all_metrics, bike_landmarks, cm_per_px=None):
+    if cm_per_px is None:
+        cm_per_px = infer_cm_per_px_from_metrics(all_metrics)
+
+    bike_metrics = calculate_bike_landmark_metrics(bike_landmarks, cm_per_px)
+    if bike_metrics["distances"] or bike_metrics["angles"]:
+        all_metrics["bike_landmarks"] = bike_metrics
+        print("[BIKE LANDMARK] Added bike_landmarks to all_metrics")
+    return bike_metrics
 
 # to compute custom bike wheel size ....use trained yolo wheel_model
 #wheel_model_path="C:\development\Python\projects\pose_estimation\PoseEstimation\getimages\runs\wheel_train_only_v2_06259pm\weights"
@@ -705,6 +828,10 @@ async def annotate_file(
 
                 del metrics["distances_by_side"]
 
+        bike_landmarks, _ = load_bike_landmarks_for_filename(input_path.name)
+        if bike_landmarks:
+            append_bike_landmark_metrics(all_metrics, bike_landmarks, cm_per_px)
+
         # ---------------------------------------------------------
         # GEOMETRY SANITY CHECK
         # Confidence can be high even when YOLO guesses wrong joints.
@@ -745,6 +872,7 @@ async def annotate_file(
                 "keypoints": keypoints,
                 "labels": all_labels,
                 "metrics": all_metrics,
+                "cm_per_px": cm_per_px,
                 "pose_quality": {
                     **person_selection,
                     "status": "ok",
@@ -1022,6 +1150,60 @@ async def analyze_overlay(layer: str = Query(...), filename: str = Query(...)):
     }
 
 
+@app.get("/bike-landmarks")
+async def get_bike_landmarks(image: str = Query(...)):
+    safe_filename = Path(image).name
+    stem = Path(safe_filename).stem
+    exact_path = MEDIA_DIR / f"{stem}_bike_landmarks.json"
+    dataset_labels_dir = MEDIA_DIR / "bike_landmark_annotations" / "labels"
+
+    print(f"[BIKE LANDMARK] Exact lookup path: {exact_path}")
+
+    processed_candidates = []
+    dataset_candidates = []
+    landmarks_path = None
+    matched_by = None
+
+    if exact_path.exists():
+        landmarks_path = exact_path
+        matched_by = "exact"
+    else:
+        processed_candidates = list(MEDIA_DIR.glob(f"{stem}_*_bike_landmarks.json"))
+        if processed_candidates:
+            landmarks_path = max(processed_candidates, key=lambda p: p.stat().st_mtime)
+            matched_by = "processed_uuid_fallback"
+        elif dataset_labels_dir.exists():
+            dataset_candidates = list(dataset_labels_dir.glob(f"{stem}_*_bike_landmarks.json"))
+            if dataset_candidates:
+                landmarks_path = max(dataset_candidates, key=lambda p: p.stat().st_mtime)
+                matched_by = "landmark_dataset_fallback"
+
+    print(f"[BIKE LANDMARK] Processed fallback candidates: {[p.name for p in processed_candidates]}")
+    print(f"[BIKE LANDMARK] Dataset fallback candidates: {[p.name for p in dataset_candidates]}")
+
+    if not landmarks_path:
+        return {
+            "found": False,
+            "source": None,
+            "matched_by": None,
+            "bike_landmarks": {}
+        }
+
+    print(f"[BIKE LANDMARK] Loaded landmarks from: {landmarks_path}")
+
+    with open(landmarks_path, "r", encoding="utf-8") as f:
+        payload = json.load(f)
+
+    return {
+        "found": True,
+        "source": landmarks_path.name,
+        "matched_by": matched_by,
+        "bike_landmarks": payload.get("bike_landmarks", {}),
+        "saved_image": payload.get("saved_image"),
+        "original_filename": payload.get("original_filename")
+    }
+
+
 @app.post("/bike-landmarks")
 async def save_bike_landmarks(request: Request):
     data = await request.json()
@@ -1046,10 +1228,128 @@ async def save_bike_landmarks(request: Request):
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
 
-    return {
+    response_payload = {
         "message": "Bike landmarks saved.",
         "filename": safe_filename,
         "path": output_path.name
+    }
+
+    layers_path = MEDIA_DIR / f"{stem}_layers.json"
+    if layers_path.exists():
+        with open(layers_path, "r", encoding="utf-8") as f:
+            layers_data = json.load(f)
+
+        all_metrics = layers_data.setdefault("metrics", {})
+        cm_per_px = layers_data.get("cm_per_px") or infer_cm_per_px_from_metrics(all_metrics)
+        bike_metrics = append_bike_landmark_metrics(all_metrics, bike_landmarks, cm_per_px)
+        print(f"[BIKE LANDMARK] Computed bike landmark metrics: {bike_metrics}")
+
+        with open(layers_path, "w", encoding="utf-8") as f:
+            json.dump(layers_data, f, indent=2)
+
+        response_payload["metrics"] = all_metrics
+        response_payload["bike_landmark_metrics"] = bike_metrics
+
+    return response_payload
+
+
+@app.post("/bike-landmark-annotation")
+async def save_bike_landmark_annotation(
+        file: UploadFile = File(...),
+        original_filename: str = Form(...),
+        image_width: str = Form(None),
+        image_height: str = Form(None),
+        bike_landmarks: str = Form(...),
+):
+    safe_original_filename = Path(original_filename or file.filename).name
+    original_stem = Path(safe_original_filename).stem
+    ext = Path(file.filename or safe_original_filename).suffix.lower() or ".jpg"
+    unique_stem = f"{original_stem}_{uuid.uuid4().hex}"
+
+    annotation_root = MEDIA_DIR / "bike_landmark_annotations"
+    images_dir = annotation_root / "images"
+    labels_dir = annotation_root / "labels"
+    images_dir.mkdir(parents=True, exist_ok=True)
+    labels_dir.mkdir(parents=True, exist_ok=True)
+
+    saved_image_name = f"{unique_stem}{ext}"
+    saved_image_path = images_dir / saved_image_name
+    with open(saved_image_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    try:
+        parsed_landmarks = json.loads(bike_landmarks)
+    except json.JSONDecodeError:
+        return JSONResponse(status_code=400, content={"error": "Invalid bike_landmarks JSON."})
+
+    def parse_dimension(value):
+        try:
+            return int(float(value)) if value not in (None, "") else None
+        except (TypeError, ValueError):
+            return None
+
+    saved_image_relative = f"bike_landmark_annotations/images/{saved_image_name}"
+    landmarks_file_name = f"{unique_stem}_bike_landmarks.json"
+    landmarks_path = labels_dir / landmarks_file_name
+
+    payload = {
+        "image": saved_image_name,
+        "original_filename": safe_original_filename,
+        "saved_image": saved_image_relative,
+        "image_width": parse_dimension(image_width),
+        "image_height": parse_dimension(image_height),
+        "bike_landmarks": parsed_landmarks
+    }
+
+    with open(landmarks_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+
+    return {
+        "status": "success",
+        "saved_image": saved_image_relative,
+        "landmarks_file": f"bike_landmark_annotations/labels/{landmarks_file_name}",
+        "filename": saved_image_relative,
+        "stem": unique_stem
+    }
+
+
+@app.post("/recalculate-bike-metrics")
+async def recalculate_bike_metrics(request: Request):
+    data = await request.json()
+    image_filename = data.get("image_filename") or data.get("filename")
+    if not image_filename:
+        return JSONResponse(status_code=400, content={"error": "Missing image filename."})
+
+    safe_filename = Path(image_filename).name
+    stem = Path(safe_filename).stem
+    layers_path = MEDIA_DIR / f"{stem}_layers.json"
+    landmarks_path = MEDIA_DIR / f"{stem}_bike_landmarks.json"
+
+    if not layers_path.exists():
+        return JSONResponse(status_code=404, content={"error": "Layers file not found."})
+    if not landmarks_path.exists():
+        return JSONResponse(status_code=404, content={"error": "Bike landmarks file not found."})
+
+    with open(layers_path, "r", encoding="utf-8") as f:
+        layers_data = json.load(f)
+
+    with open(landmarks_path, "r", encoding="utf-8") as f:
+        landmarks_data = json.load(f)
+
+    all_metrics = layers_data.setdefault("metrics", {})
+    cm_per_px = data.get("cm_per_px") or layers_data.get("cm_per_px") or infer_cm_per_px_from_metrics(all_metrics)
+    bike_landmarks = landmarks_data.get("bike_landmarks", {})
+    bike_metrics = append_bike_landmark_metrics(all_metrics, bike_landmarks, cm_per_px)
+    print(f"[BIKE LANDMARK] Computed bike landmark metrics: {bike_metrics}")
+
+    with open(layers_path, "w", encoding="utf-8") as f:
+        json.dump(layers_data, f, indent=2)
+
+    return {
+        "message": "Bike landmark metrics recalculated.",
+        "filename": safe_filename,
+        "metrics": all_metrics,
+        "bike_landmark_metrics": bike_metrics
     }
 
 

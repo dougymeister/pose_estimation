@@ -669,14 +669,30 @@ window.measurementUnit = "in";  // or "cm"       // hardcode vs use userLocale
 function syncSvgSize() {
   const img = document.getElementById("analyzeImage");
   const svg = document.getElementById("svgOverlay");
-  svg.setAttribute("width", img.clientWidth);
-  svg.setAttribute("height", img.clientHeight);
-  renderBikeLandmarks();
+  if (!img || !svg) return;
+
+  const rect = img.getBoundingClientRect();
+  svg.setAttribute("width", rect.width);
+  svg.setAttribute("height", rect.height);
+  if (img.naturalWidth && img.naturalHeight) {
+    svg.setAttribute("viewBox", `0 0 ${img.naturalWidth} ${img.naturalHeight}`);
+    svg.setAttribute("preserveAspectRatio", "none");
+  }
+
+  renderBikeLandmarkMarkers();
+  const filename = window.latestAnnotatedFilename || window.selectedOriginalFilename;
+  if (filename) {
+    loadBikeLandmarks(filename);
+  }
 }
 window.addEventListener("resize", syncSvgSize);
 
 window.bikeLandmarks = window.bikeLandmarks || {};
+window.pendingBikeLandmarks = window.pendingBikeLandmarks || false;
 window.bikeLandmarkModeEnabled = false;
+window.lastLoadedBikeLandmarkFilename = window.lastLoadedBikeLandmarkFilename || null;
+window.selectedImageFile = window.selectedImageFile || null;
+window.selectedOriginalFilename = window.selectedOriginalFilename || null;
 
 function toggleBikeLandmarkMode() {
   window.bikeLandmarkModeEnabled = !window.bikeLandmarkModeEnabled;
@@ -710,6 +726,7 @@ function handleBikeLandmarkClick(event) {
     y: originalY,
     visible: true
   };
+  window.pendingBikeLandmarks = true;
 
   renderBikeLandmarks();
 }
@@ -723,15 +740,11 @@ function renderBikeLandmarks() {
 
   if (!window.bikeLandmarks || !img.naturalWidth || !img.naturalHeight) return;
 
-  const rect = img.getBoundingClientRect();
-  const scaleX = rect.width / img.naturalWidth;
-  const scaleY = rect.height / img.naturalHeight;
-
   Object.entries(window.bikeLandmarks).forEach(([landmarkType, point]) => {
     if (!point || point.visible === false) return;
 
-    const x = point.x * scaleX;
-    const y = point.y * scaleY;
+    const x = point.x;
+    const y = point.y;
     const group = document.createElementNS(svg.namespaceURI, "g");
     group.setAttribute("class", "bike-landmark-marker");
     group.dataset.landmarkType = landmarkType;
@@ -764,18 +777,43 @@ function renderBikeLandmarks() {
   });
 }
 
-async function saveBikeLandmarks() {
-  const img = document.getElementById("analyzeImage");
-  const filename = window.latestPoseFilename;
+function renderBikeLandmarkMarkers() {
+  renderBikeLandmarks();
+}
 
-  if (!filename) {
-    alert("No processed image available.");
-    return;
+async function loadBikeLandmarks(filename) {
+  if (!filename) return;
+  if (window.lastLoadedBikeLandmarkFilename === filename) return;
+
+  try {
+    const response = await fetch(`/bike-landmarks?image=${encodeURIComponent(filename)}`);
+    const result = await response.json();
+
+    if (!response.ok || result.error || !result.found) {
+      return;
+    }
+
+    const hasCurrentLandmarks = Object.keys(window.bikeLandmarks || {}).length > 0;
+    if (window.pendingBikeLandmarks && hasCurrentLandmarks) {
+      const shouldReplace = confirm("Replace unsaved bike landmarks with saved landmarks for this image?");
+      if (!shouldReplace) {
+        return;
+      }
+    }
+
+    window.bikeLandmarks = result.bike_landmarks || {};
+    window.pendingBikeLandmarks = false;
+    window.lastLoadedBikeLandmarkFilename = filename;
+    renderBikeLandmarkMarkers();
+  } catch (err) {
+    console.error("Error loading bike landmarks:", err);
   }
+}
 
+async function postBikeLandmarksForFilename(filename, options = {}) {
+  const img = document.getElementById("analyzeImage");
   if (!window.bikeLandmarks || Object.keys(window.bikeLandmarks).length === 0) {
-    alert("No bike landmarks have been placed.");
-    return;
+    return null;
   }
 
   const payload = {
@@ -786,17 +824,118 @@ async function saveBikeLandmarks() {
     bike_landmarks: window.bikeLandmarks
   };
 
-  try {
-    const response = await fetch("/bike-landmarks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    const result = await response.json();
-    if (!response.ok || result.error) {
-      throw new Error(result.error || "Failed to save bike landmarks.");
+  const response = await fetch("/bike-landmarks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const result = await response.json();
+  if (!response.ok || result.error) {
+    throw new Error(result.error || "Failed to save bike landmarks.");
+  }
+  console.log("[BIKE LANDMARK] Saved landmarks for processed image:", result);
+
+  const recalcResponse = await fetch("/recalculate-bike-metrics", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename, image_filename: filename })
+  });
+  const recalcResult = await recalcResponse.json();
+  if (recalcResponse.ok && !recalcResult.error) {
+    console.log("[BIKE LANDMARK] Computed bike landmark metrics:", recalcResult.bike_landmark_metrics);
+  }
+  if (recalcResponse.ok && !recalcResult.error && recalcResult.metrics) {
+    window.latestPoseMetrics = recalcResult.metrics;
+    window.latestPoseMetricsSubset = recalcResult.metrics;
+    renderOverlayLabels(window.latestPoseMetrics, window.latestPoseKeypoints || []);
+    if (window.latestPoseMetrics.bike_landmarks) {
+      console.log("[BIKE LANDMARK] Added bike_landmarks to all_metrics", window.latestPoseMetrics.bike_landmarks);
     }
+  }
+
+  window.pendingBikeLandmarks = false;
+  if (options.showAlert) {
     alert("Bike landmarks saved.");
+  }
+
+  return result;
+}
+
+async function carryBikeLandmarksToProcessedFilename(filename) {
+  if (!filename || !window.bikeLandmarks || Object.keys(window.bikeLandmarks).length === 0) {
+    return null;
+  }
+
+  console.log("[BIKE LANDMARK] Carrying loaded landmarks forward to processed filename:", filename);
+  return postBikeLandmarksForFilename(filename);
+}
+
+async function uploadBikeLandmarkAnnotation(options = {}) {
+  const img = document.getElementById("analyzeImage");
+  if (!window.selectedImageFile) {
+    throw new Error("No selected image file is available.");
+  }
+  if (!window.bikeLandmarks || Object.keys(window.bikeLandmarks).length === 0) {
+    throw new Error("No bike landmarks have been placed.");
+  }
+
+  console.log("[BIKE LANDMARK] Saving landmarks before Process with image upload");
+
+  const formData = new FormData();
+  formData.append("file", window.selectedImageFile);
+  formData.append("original_filename", window.selectedOriginalFilename || window.selectedImageFile.name);
+  formData.append("image_width", img?.naturalWidth || "");
+  formData.append("image_height", img?.naturalHeight || "");
+  formData.append("bike_landmarks", JSON.stringify(window.bikeLandmarks));
+
+  const response = await fetch("/bike-landmark-annotation", {
+    method: "POST",
+    body: formData
+  });
+  const result = await response.json();
+  if (!response.ok || result.error) {
+    throw new Error(result.error || "Failed to save bike landmark annotation.");
+  }
+
+  console.log("[BIKE LANDMARK] Saved annotation image:", result.saved_image);
+  console.log("[BIKE LANDMARK] Saved annotation JSON:", result.landmarks_file);
+
+  window.latestAnnotatedFilename = result.saved_image || result.filename || result.stem;
+  window.pendingBikeLandmarks = false;
+  window.lastLoadedBikeLandmarkFilename = null;
+
+  if (options.showAlert) {
+    alert("Bike landmark annotation saved.");
+  }
+
+  return result;
+}
+
+async function saveBikeLandmarks() {
+  const filename = window.latestAnnotatedFilename;
+
+  if (!filename) {
+    if (window.selectedImageFile) {
+      try {
+        await uploadBikeLandmarkAnnotation({ showAlert: true });
+      } catch (err) {
+        console.error("Error saving bike landmark annotation:", err);
+        alert("Failed to save bike landmark annotation.");
+      }
+      return;
+    }
+
+    alert("No processed image or selected local image is available.");
+    return;
+  }
+
+  if (!window.bikeLandmarks || Object.keys(window.bikeLandmarks).length === 0) {
+    alert("No bike landmarks have been placed.");
+    return;
+  }
+
+  try {
+    await postBikeLandmarksForFilename(filename, { showAlert: true });
   } catch (err) {
     console.error("Error saving bike landmarks:", err);
     alert("Failed to save bike landmarks.");
@@ -805,6 +944,7 @@ async function saveBikeLandmarks() {
 
 function clearBikeLandmarks() {
   window.bikeLandmarks = {};
+  window.pendingBikeLandmarks = false;
   renderBikeLandmarks();
 }
 
@@ -862,7 +1002,16 @@ function renderOverlayLabels(metricsByLayer = {}, keypoints = []) {
   while (svg.firstChild) svg.removeChild(svg.firstChild);
 
   const img = document.getElementById("analyzeImage");
-  const { width: imgW, height: imgH } = img.getBoundingClientRect();
+  if (img?.naturalWidth && img?.naturalHeight) {
+    const rect = img.getBoundingClientRect();
+    svg.setAttribute("width", rect.width);
+    svg.setAttribute("height", rect.height);
+    svg.setAttribute("viewBox", `0 0 ${img.naturalWidth} ${img.naturalHeight}`);
+    svg.setAttribute("preserveAspectRatio", "none");
+  }
+
+  const imgW = img?.naturalWidth || svg.viewBox.baseVal.width || svg.clientWidth;
+  const imgH = img?.naturalHeight || svg.viewBox.baseVal.height || svg.clientHeight;
   const margin = 10, lineHeight = 18;
 
   // read your checkboxes
@@ -1398,12 +1547,34 @@ let lastPoseType = "seated";
       const file = event.target.files[0];
       if (!file) return;
       uploadedFile = file;
+      window.selectedImageFile = file;
+      window.selectedOriginalFilename = file.name;
+      window.latestAnnotatedFilename = null;
+      window.latestPoseFilename = null;
+      window.lastLoadedBikeLandmarkFilename = null;
+      if (window.pendingBikeLandmarks && Object.keys(window.bikeLandmarks || {}).length > 0) {
+        const shouldClear = confirm("Clear unsaved bike landmarks for the newly selected image?");
+        if (shouldClear) {
+          window.bikeLandmarks = {};
+          window.pendingBikeLandmarks = false;
+        }
+      } else {
+        window.bikeLandmarks = {};
+        window.pendingBikeLandmarks = false;
+      }
       const reader = new FileReader();
       reader.onload = function(e) {
         uploadedDataUrl = e.target.result;
         const thumb = document.getElementById("uploadThumb");
         thumb.src = uploadedDataUrl;
         thumb.style.display = 'block';
+        const analyzeImage = document.getElementById("analyzeImage");
+        if (analyzeImage) {
+          analyzeImage.src = uploadedDataUrl;
+          analyzeImage.style.display = "block";
+        }
+        renderBikeLandmarkMarkers();
+        loadBikeLandmarks(window.latestAnnotatedFilename || window.selectedOriginalFilename);
       };
       reader.readAsDataURL(file);
     }
@@ -1430,7 +1601,7 @@ let lastPoseType = "seated";
         body: formData
     })
     .then(response => response.json())
-    .then(data => {
+    .then(async data => {
         if (data.error) {
             alert("Annotation failed.");
             return;
@@ -1439,8 +1610,17 @@ let lastPoseType = "seated";
         const imgUrl = `/media/${data.filename}`;
         document.getElementById("analyzeImage").src = imgUrl;
         window.latestPoseFilename = data.filename;
+        window.latestAnnotatedFilename = data.filename;
+        loadBikeLandmarks(data.filename);
         window.latestPoseMetrics = data.metrics;
         renderOverlayLabels(window.latestPoseMetrics, window.latestKeypoints);
+        if (Object.keys(window.bikeLandmarks || {}).length > 0) {
+          try {
+            await carryBikeLandmarksToProcessedFilename(data.filename);
+          } catch (err) {
+            console.error("Error carrying bike landmarks forward:", err);
+          }
+        }
         loadFeedback();
     })
     .catch(error => {
@@ -1872,6 +2052,8 @@ if (!file && !window.latestPoseFilename) {
     const { filename, metrics, keypoints } = result;
 
     window.latestPoseFilename = filename;
+    window.latestAnnotatedFilename = filename;
+    loadBikeLandmarks(filename);
     window.latestPoseMetrics = metrics;
     window.latestPoseKeypoints = keypoints;
     window.latestPoseMetricsSubset = metrics;
@@ -1882,6 +2064,14 @@ if (!file && !window.latestPoseFilename) {
 
     // Show annotations
     renderOverlayLabels(metrics, keypoints);
+
+    if (Object.keys(window.bikeLandmarks || {}).length > 0) {
+      try {
+        await carryBikeLandmarksToProcessedFilename(filename);
+      } catch (err) {
+        console.error("Error carrying bike landmarks forward:", err);
+      }
+    }
 
     // Load feedback
     loadFeedback();

@@ -302,5 +302,65 @@
       }
     },
     "key": "arm_reach_distance_horizon_right_6_10"
+  },
+  "bike_saddle_to_bar_distance": {
+    "label": "Bike Saddle to Bar Distance",
+    "road": {
+      "endurance": {
+        "min": 18,
+        "max": 28,
+        "units": "in",
+        "explanation": "Manual saddle-center to handlebar-center distance. Use with rider reach and comfort feedback."
+      }
+    },
+    "key": "bike_saddle_to_bar_distance"
+  },
+  "bike_saddle_to_bar_horizontal_reach": {
+    "label": "Bike Saddle to Bar Horizontal Reach",
+    "road": {
+      "endurance": {
+        "min": 16,
+        "max": 26,
+        "units": "in",
+        "explanation": "Horizontal cockpit reach from saddle center to handlebar center."
+      }
+    },
+    "key": "bike_saddle_to_bar_horizontal_reach"
+  },
+  "bike_saddle_to_bar_vertical_drop": {
+    "label": "Bike Saddle to Bar Vertical Drop",
+    "road": {
+      "endurance": {
+        "min": 0,
+        "max": 6,
+        "units": "in",
+        "explanation": "Vertical difference between saddle center and handlebar center."
+      }
+    },
+    "key": "bike_saddle_to_bar_vertical_drop"
+  },
+  "bike_saddle_height": {
+    "label": "Bike Saddle Height",
+    "road": {
+      "endurance": {
+        "min": 24,
+        "max": 34,
+        "units": "in",
+        "explanation": "Manual bottom-bracket to saddle-center distance."
+      }
+    },
+    "key": "bike_saddle_height"
+  },
+  "bike_wheelbase": {
+    "label": "Bike Wheelbase",
+    "road": {
+      "endurance": {
+        "min": 36,
+        "max": 44,
+        "units": "in",
+        "explanation": "Manual rear-axle to front-axle distance."
+      }
+    },
+    "key": "bike_wheelbase"
   }
 }
