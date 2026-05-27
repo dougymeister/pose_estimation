@@ -530,6 +530,7 @@ svg.overlay {
                   </select>
                   <button id="saveBikeLandmarksBtn" class="overlay-btn" type="button" onclick="saveBikeLandmarks()">Save Bike Landmarks</button>
                   <button id="clearBikeLandmarksBtn" class="overlay-btn" type="button" onclick="clearBikeLandmarks()">Clear Landmarks</button>
+                  <button id="analyzeBikeOnlyBtn" class="overlay-btn" type="button" onclick="analyzeBikeGeometryOnly()" style="background:#005bbb; color:#fff; border-color:#00418a;">Analyze Bike Only</button>
                 </div>
 
                                 <br>
@@ -1007,6 +1008,106 @@ async function saveBikeLandmarks() {
   }
 }
 
+function getCurrentImageFilenameForBikeGeometry() {
+  return window.latestAnnotatedFilename || window.latestPoseFilename || null;
+}
+
+function getBikeGeometryReferencePayload() {
+  const refObjElem = document.getElementById("referenceObject");
+  const refSizeElem = document.getElementById("referenceSize");
+  const refUnitElem = document.getElementById("referenceUnit");
+
+  return {
+    reference_object: refObjElem?.value || "front_wheel",
+    reference_size: refSizeElem?.value ? Number(refSizeElem.value) : 27.0,
+    reference_unit: refUnitElem?.value || window.measurementUnit || "in"
+  };
+}
+
+async function ensureBikeLandmarksSavedForGeometry() {
+  let filename = getCurrentImageFilenameForBikeGeometry();
+
+  if (!filename && window.selectedImageFile) {
+    const result = await uploadBikeLandmarkAnnotation();
+    filename = result.saved_image || result.filename || result.stem;
+    window.latestAnnotatedFilename = filename;
+  } else if (filename && window.pendingBikeLandmarks) {
+    await postBikeLandmarksForFilename(filename);
+  }
+
+  return filename;
+}
+
+async function analyzeBikeGeometryOnly() {
+  if (!window.bikeLandmarks || Object.keys(window.bikeLandmarks).length === 0) {
+    alert("Add or load bike landmarks before analyzing bike geometry.");
+    return;
+  }
+
+  try {
+    const filename = await ensureBikeLandmarksSavedForGeometry();
+    if (!filename) {
+      alert("Save or select an image before analyzing bike geometry.");
+      return;
+    }
+
+    const response = await fetch("/analyze-bike-geometry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image: filename,
+        ...getBikeGeometryReferencePayload(),
+        bike_landmarks: window.bikeLandmarks
+      })
+    });
+
+    const result = await response.json();
+    if (!response.ok || result.error) {
+      throw new Error(result.error || "Bike geometry analysis failed.");
+    }
+
+    if (!result.metrics || Object.keys(result.metrics).length === 0) {
+      alert(result.message || "No bike landmarks found. Add or load bike landmarks first.");
+      return;
+    }
+
+    window.latestPoseFilename = result.filename || filename;
+    window.latestAnnotatedFilename = result.filename || filename;
+    window.latestPoseKeypoints = [];
+    window.latestKeypoints = [];
+    window.latestPoseMetrics = {
+      ...(window.latestPoseMetrics || {}),
+      ...result.metrics
+    };
+    window.latestPoseMetricsSubset = result.metrics;
+
+    renderOverlayLabels(window.latestPoseMetricsSubset, []);
+    renderBikeLandmarkMarkers();
+    loadFeedback();
+  } catch (err) {
+    console.error("Error analyzing bike geometry:", err);
+    alert("Bike geometry analysis failed.");
+  }
+}
+
+function ensureAnalyzeBikeGeometryOnlyButton() {
+  if (document.getElementById("analyzeBikeOnlyBtn")) return;
+
+  const clearBtn = document.getElementById("clearBikeLandmarksBtn");
+  if (!clearBtn || !clearBtn.parentElement) return;
+
+  const button = document.createElement("button");
+  button.id = "analyzeBikeOnlyBtn";
+  button.className = "overlay-btn";
+  button.type = "button";
+  button.textContent = "Analyze Bike Only";
+  button.style.background = "#005bbb";
+  button.style.color = "#fff";
+  button.style.borderColor = "#00418a";
+  button.addEventListener("click", analyzeBikeGeometryOnly);
+  clearBtn.insertAdjacentElement("afterend", button);
+}
+
 function clearBikeLandmarks() {
   window.bikeLandmarks = {};
   window.pendingBikeLandmarks = false;
@@ -1018,6 +1119,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const svg = document.getElementById("svgOverlay");
   if (img) img.addEventListener("click", handleBikeLandmarkClick);
   if (svg) svg.addEventListener("click", handleBikeLandmarkClick);
+  ensureAnalyzeBikeGeometryOnlyButton();
 });
 
 // any time the user flips arc‐path on/off, redraw the overlays

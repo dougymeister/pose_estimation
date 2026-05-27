@@ -362,6 +362,7 @@ def make_bike_landmark_distance_entry(metric_key, point_a, point_b, mode, cm_per
     return {
         "key": metric_key,
         "name": metric_key,
+        "layer": "bike_landmarks",
         "type": distance_type,
         "points": point_labels or [],
         "landmark_points": point_labels or [],
@@ -424,6 +425,17 @@ def append_bike_landmark_metrics(all_metrics, bike_landmarks, cm_per_px=None):
         all_metrics["bike_landmarks"] = bike_metrics
         print("[BIKE LANDMARK] Added bike_landmarks to all_metrics")
     return bike_metrics
+
+
+def resolve_media_file(filename):
+    if not filename:
+        return None
+
+    relative_path = Path(str(filename).replace("\\", "/"))
+    if relative_path.is_absolute() or ".." in relative_path.parts:
+        return None
+
+    return MEDIA_DIR / relative_path
 
 # to compute custom bike wheel size ....use trained yolo wheel_model
 #wheel_model_path="C:\development\Python\projects\pose_estimation\PoseEstimation\getimages\runs\wheel_train_only_v2_06259pm\weights"
@@ -1350,6 +1362,84 @@ async def recalculate_bike_metrics(request: Request):
         "filename": safe_filename,
         "metrics": all_metrics,
         "bike_landmark_metrics": bike_metrics
+    }
+
+
+@app.post("/analyze-bike-geometry")
+async def analyze_bike_geometry(request: Request):
+    print("[BIKE GEOMETRY] Starting bike-only analysis")
+
+    data = await request.json()
+    image_filename = data.get("image") or data.get("filename") or data.get("image_filename")
+    if not image_filename:
+        return JSONResponse(status_code=400, content={"error": "Missing image filename."})
+
+    image_path = resolve_media_file(image_filename)
+    safe_filename = Path(str(image_filename).replace("\\", "/")).as_posix()
+    stem = Path(safe_filename).stem
+
+    bike_landmarks = data.get("bike_landmarks") or {}
+    if not bike_landmarks:
+        bike_landmarks, _ = load_bike_landmarks_for_filename(safe_filename)
+
+    print(f"[BIKE GEOMETRY] Loaded landmarks: {bike_landmarks}")
+
+    if not bike_landmarks:
+        return {
+            "message": "No bike landmarks found. Add or load bike landmarks first.",
+            "metrics": {}
+        }
+
+    reference_object = data.get("reference_object")
+    reference_size = data.get("reference_size")
+    reference_unit = data.get("reference_unit")
+    cm_per_px = None
+
+    if image_path and image_path.exists() and reference_object and reference_size and reference_unit:
+        try:
+            cm_per_px, _ = compute_conversion_factor(
+                [],
+                image_path,
+                reference_object,
+                float(reference_size),
+                reference_unit
+            )
+        except Exception as e:
+            print(f"[BIKE GEOMETRY] Scale calculation skipped: {e}")
+
+    print(f"[BIKE GEOMETRY] cm_per_px: {cm_per_px}")
+
+    bike_metrics = calculate_bike_landmark_metrics(bike_landmarks, cm_per_px)
+    print(f"[BIKE GEOMETRY] Computed metrics: {bike_metrics}")
+
+    metrics = {}
+    if bike_metrics["distances"] or bike_metrics["angles"]:
+        metrics["bike_landmarks"] = bike_metrics
+
+    layers_path = MEDIA_DIR / f"{stem}_layers.json"
+    if layers_path.exists():
+        with open(layers_path, "r", encoding="utf-8") as f:
+            layers_data = json.load(f)
+    else:
+        layers_data = {
+            "keypoints": [],
+            "labels": [],
+            "metrics": {}
+        }
+
+    layers_data.setdefault("keypoints", [])
+    layers_data.setdefault("labels", [])
+    layers_data.setdefault("metrics", {})
+    layers_data["metrics"]["bike_landmarks"] = bike_metrics
+
+    with open(layers_path, "w", encoding="utf-8") as f:
+        json.dump(layers_data, f, indent=2)
+
+    return {
+        "message": "Bike geometry analysis complete",
+        "pose_detected": False,
+        "metrics": metrics,
+        "filename": safe_filename
     }
 
 
