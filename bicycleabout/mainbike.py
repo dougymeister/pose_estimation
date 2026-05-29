@@ -3,6 +3,7 @@ import json
 import shutil
 import numpy as np
 import cv2
+from datetime import datetime, timezone
 from pathlib import Path
 from fastapi import FastAPI, File, Form, UploadFile, Query
 from fastapi.responses import JSONResponse
@@ -600,6 +601,8 @@ def compute_conversion_factor(keypoints, image_path, reference_object, reference
             reference_cm = reference_size * 2.54
         elif reference_unit == "cm":
             reference_cm = reference_size
+        elif reference_unit == "mm":
+            reference_cm = reference_size / 10
         else:
             raise ValueError("Unsupported unit")
 
@@ -790,6 +793,124 @@ NO_PERSON_POSE_MESSAGE = (
     "or upload a side-view image with a rider for pose analysis."
 )
 
+SCALE_REFERENCE_NOTE = "Use actual outside tire diameter for wheel-based scaling."
+
+
+def build_scale_reference(reference_object, reference_size, reference_unit, cm_per_px, wheel_preset=None, wheel_preset_label=None):
+    try:
+        normalized_size = float(reference_size) if reference_size is not None else None
+    except (TypeError, ValueError):
+        normalized_size = reference_size
+
+    return {
+        "reference_object": reference_object,
+        "reference_size": normalized_size,
+        "reference_unit": reference_unit,
+        "cm_per_px": cm_per_px,
+        "wheel_preset": wheel_preset,
+        "wheel_preset_label": wheel_preset_label,
+        "note": SCALE_REFERENCE_NOTE
+    }
+
+
+def normalize_scale_reference(scale_reference, cm_per_px=None):
+    if not isinstance(scale_reference, dict):
+        return None
+
+    return build_scale_reference(
+        scale_reference.get("reference_object"),
+        scale_reference.get("reference_size"),
+        scale_reference.get("reference_unit"),
+        cm_per_px if cm_per_px is not None else scale_reference.get("cm_per_px"),
+        scale_reference.get("wheel_preset"),
+        scale_reference.get("wheel_preset_label")
+    )
+
+
+def parse_scale_reference_payload(raw_scale_reference):
+    if raw_scale_reference in (None, ""):
+        return None
+    if isinstance(raw_scale_reference, dict):
+        return raw_scale_reference
+    if isinstance(raw_scale_reference, str):
+        try:
+            parsed = json.loads(raw_scale_reference)
+            return parsed if isinstance(parsed, dict) else None
+        except json.JSONDecodeError:
+            return None
+    return None
+
+
+def utc_timestamp():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def parse_saved_at(value):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
+def load_json_payload(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def landmark_candidate_sort_key(path):
+    payload = load_json_payload(path)
+    saved_at_ts = parse_saved_at(payload.get("saved_at"))
+    mtime = path.stat().st_mtime
+    print(f"[BIKE LANDMARK] Candidate: {path.name} saved_at={payload.get('saved_at')} mtime={mtime}")
+    return (saved_at_ts if saved_at_ts is not None else mtime, mtime)
+
+
+def resolve_landmark_source_file(landmark_source):
+    if not landmark_source:
+        return None
+
+    raw_source = Path(str(landmark_source).replace("\\", "/"))
+    if raw_source.is_absolute() or ".." in raw_source.parts:
+        return None
+
+    allowed_roots = [
+        MEDIA_DIR,
+        MEDIA_DIR / "bike_landmark_annotations" / "labels",
+    ]
+    candidates = []
+    if len(raw_source.parts) > 1:
+        candidates.append(MEDIA_DIR / raw_source)
+    else:
+        candidates.append(MEDIA_DIR / raw_source.name)
+        candidates.append(MEDIA_DIR / "bike_landmark_annotations" / "labels" / raw_source.name)
+
+    for candidate in candidates:
+        if candidate.suffix != ".json" or not candidate.name.endswith("_bike_landmarks.json"):
+            continue
+        if not candidate.exists():
+            continue
+        try:
+            resolved = candidate.resolve()
+            for root in allowed_roots:
+                if resolved.is_relative_to(root.resolve()):
+                    return candidate
+        except OSError:
+            continue
+    return None
+
+
+def landmark_source_name(path):
+    try:
+        relative = path.resolve().relative_to(MEDIA_DIR.resolve())
+        return relative.as_posix()
+    except ValueError:
+        return path.name
+
 
 def no_person_pose_response(filename=None, pose_quality=None):
     payload = {
@@ -814,6 +935,9 @@ async def annotate_file(
         reference_object: str = Form(None),
         reference_size: float = Form(None),
         reference_unit: str = Form(None),
+        wheel_preset: str = Form(None),
+        wheel_preset_label: str = Form(None),
+        scale_reference: str = Form(None),
 ):
     try:
         ext = Path(file.filename).suffix.lower()
@@ -947,6 +1071,17 @@ async def annotate_file(
 
         print(f"/annotate: AFTER compute_conversion_factor(...cm_per_px={cm_per_px}, "
               f"diameters_px={diameters_px})")
+        request_scale_reference = parse_scale_reference_payload(scale_reference) or {}
+        print(f"[SCALE] Received scale_reference: {request_scale_reference}")
+        scale_reference_payload = normalize_scale_reference({
+            **request_scale_reference,
+            "reference_object": reference_object or request_scale_reference.get("reference_object"),
+            "reference_size": reference_size if reference_size is not None else request_scale_reference.get("reference_size"),
+            "reference_unit": reference_unit or request_scale_reference.get("reference_unit"),
+            "wheel_preset": wheel_preset or request_scale_reference.get("wheel_preset"),
+            "wheel_preset_label": wheel_preset_label or request_scale_reference.get("wheel_preset_label"),
+        }, cm_per_px)
+        print(f"[SCALE] Using scale_reference: {scale_reference_payload}")
 
         all_labels = []
         all_metrics = {}
@@ -1021,12 +1156,14 @@ async def annotate_file(
         json_output_path = MEDIA_DIR / f"{filename_stem}_layers.json"
 
         with open(json_output_path, "w", encoding="utf-8") as f:
+            print(f"[SCALE] Saving scale_reference to: {json_output_path} {scale_reference_payload}")
             json.dump({
                 "keypoints": keypoints,
                 "visible": visible,
                 "labels": all_labels,
                 "metrics": all_metrics,
                 "cm_per_px": cm_per_px,
+                "scale_reference": scale_reference_payload,
                 "pose_quality": {
                     **person_selection,
                     "status": "ok",
@@ -1040,6 +1177,7 @@ async def annotate_file(
             "message": "Annotation complete",
             "keypoints": keypoints,
             "metrics": all_metrics,
+            "scale_reference": scale_reference_payload,
             "pose_quality": {
                 **person_selection,
                 "status": "ok",
@@ -1323,14 +1461,16 @@ async def get_bike_landmarks(image: str = Query(...)):
         matched_by = "exact"
     else:
         processed_candidates = list(MEDIA_DIR.glob(f"{stem}_*_bike_landmarks.json"))
-        if processed_candidates:
-            landmarks_path = max(processed_candidates, key=lambda p: p.stat().st_mtime)
-            matched_by = "processed_uuid_fallback"
-        elif dataset_labels_dir.exists():
+        if dataset_labels_dir.exists():
             dataset_candidates = list(dataset_labels_dir.glob(f"{stem}_*_bike_landmarks.json"))
-            if dataset_candidates:
-                landmarks_path = max(dataset_candidates, key=lambda p: p.stat().st_mtime)
-                matched_by = "landmark_dataset_fallback"
+        fallback_candidates = processed_candidates + dataset_candidates
+        if fallback_candidates:
+            landmarks_path = max(fallback_candidates, key=landmark_candidate_sort_key)
+            matched_by = (
+                "landmark_dataset_fallback"
+                if dataset_labels_dir in landmarks_path.parents
+                else "processed_uuid_fallback"
+            )
 
     print(f"[BIKE LANDMARK] Processed fallback candidates: {[p.name for p in processed_candidates]}")
     print(f"[BIKE LANDMARK] Dataset fallback candidates: {[p.name for p in dataset_candidates]}")
@@ -1340,19 +1480,23 @@ async def get_bike_landmarks(image: str = Query(...)):
             "found": False,
             "source": None,
             "matched_by": None,
-            "bike_landmarks": {}
+            "bike_landmarks": {},
+            "scale_reference": None
         }
 
+    print(f"[BIKE LANDMARK] Selected candidate: {landmarks_path.name}")
     print(f"[BIKE LANDMARK] Loaded landmarks from: {landmarks_path}")
 
     with open(landmarks_path, "r", encoding="utf-8") as f:
         payload = json.load(f)
+    print(f"[SCALE] Loaded scale_reference from: {landmarks_path} {payload.get('scale_reference')}")
 
     return {
         "found": True,
-        "source": landmarks_path.name,
+        "source": landmark_source_name(landmarks_path),
         "matched_by": matched_by,
         "bike_landmarks": payload.get("bike_landmarks", {}),
+        "scale_reference": payload.get("scale_reference"),
         "saved_image": payload.get("saved_image"),
         "original_filename": payload.get("original_filename")
     }
@@ -1369,23 +1513,42 @@ async def save_bike_landmarks(request: Request):
     safe_filename = Path(image_filename).name
     stem = Path(safe_filename).stem
     bike_landmarks = data.get("bike_landmarks") or {}
+    source_path = resolve_landmark_source_file(data.get("landmark_source"))
+    output_path = source_path or (MEDIA_DIR / f"{stem}_bike_landmarks.json")
+    existing_payload = {}
+    if output_path.exists():
+        with open(output_path, "r", encoding="utf-8") as f:
+            existing_payload = json.load(f)
+
+    submitted_scale_reference = parse_scale_reference_payload(data.get("scale_reference"))
+    print(f"[SCALE] Received scale_reference: {submitted_scale_reference}")
+    scale_reference = normalize_scale_reference(
+        submitted_scale_reference if submitted_scale_reference is not None else existing_payload.get("scale_reference")
+    )
 
     payload = {
-        "filename": safe_filename,
+        **existing_payload,
+        "image": safe_filename,
         "image_filename": safe_filename,
         "image_width": data.get("image_width"),
         "image_height": data.get("image_height"),
-        "bike_landmarks": bike_landmarks
+        "bike_landmarks": bike_landmarks,
+        "scale_reference": scale_reference,
+        "saved_at": utc_timestamp()
     }
 
-    output_path = MEDIA_DIR / f"{stem}_bike_landmarks.json"
+    print(f"[SCALE] Saving scale_reference to: {output_path} {scale_reference}")
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
 
     response_payload = {
+        "status": "saved",
         "message": "Bike landmarks saved.",
         "filename": safe_filename,
-        "path": output_path.name
+        "file": landmark_source_name(output_path),
+        "source": landmark_source_name(output_path),
+        "path": landmark_source_name(output_path),
+        "scale_reference": scale_reference
     }
 
     layers_path = MEDIA_DIR / f"{stem}_layers.json"
@@ -1401,12 +1564,16 @@ async def save_bike_landmarks(request: Request):
         visible = layers_data.get("visible") or []
         if keypoints and visible:
             append_kops_metric(all_metrics, keypoints, visible, bike_landmarks, cm_per_px)
+        if scale_reference is not None:
+            scale_reference = normalize_scale_reference(scale_reference, cm_per_px)
+            layers_data["scale_reference"] = scale_reference
 
         with open(layers_path, "w", encoding="utf-8") as f:
             json.dump(layers_data, f, indent=2)
 
         response_payload["metrics"] = all_metrics
         response_payload["bike_landmark_metrics"] = bike_metrics
+        response_payload["scale_reference"] = scale_reference
 
     return response_payload
 
@@ -1418,27 +1585,22 @@ async def save_bike_landmark_annotation(
         image_width: str = Form(None),
         image_height: str = Form(None),
         bike_landmarks: str = Form(...),
+        scale_reference: str = Form(None),
+        landmark_source: str = Form(None),
 ):
-    safe_original_filename = Path(original_filename or file.filename).name
-    original_stem = Path(safe_original_filename).stem
-    ext = Path(file.filename or safe_original_filename).suffix.lower() or ".jpg"
-    unique_stem = f"{original_stem}_{uuid.uuid4().hex}"
-
     annotation_root = MEDIA_DIR / "bike_landmark_annotations"
     images_dir = annotation_root / "images"
     labels_dir = annotation_root / "labels"
     images_dir.mkdir(parents=True, exist_ok=True)
     labels_dir.mkdir(parents=True, exist_ok=True)
 
-    saved_image_name = f"{unique_stem}{ext}"
-    saved_image_path = images_dir / saved_image_name
-    with open(saved_image_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-
     try:
         parsed_landmarks = json.loads(bike_landmarks)
     except json.JSONDecodeError:
         return JSONResponse(status_code=400, content={"error": "Invalid bike_landmarks JSON."})
+
+    submitted_scale_reference = parse_scale_reference_payload(scale_reference)
+    print(f"[SCALE] Received scale_reference: {submitted_scale_reference}")
 
     def parse_dimension(value):
         try:
@@ -1446,28 +1608,57 @@ async def save_bike_landmark_annotation(
         except (TypeError, ValueError):
             return None
 
-    saved_image_relative = f"bike_landmark_annotations/images/{saved_image_name}"
-    landmarks_file_name = f"{unique_stem}_bike_landmarks.json"
-    landmarks_path = labels_dir / landmarks_file_name
+    source_path = resolve_landmark_source_file(landmark_source)
+    existing_payload = load_json_payload(source_path) if source_path else {}
+    parsed_scale_reference = normalize_scale_reference(
+        submitted_scale_reference if submitted_scale_reference is not None else existing_payload.get("scale_reference")
+    )
+
+    if source_path:
+        landmarks_path = source_path
+        landmarks_file_name = source_path.name
+        saved_image_name = existing_payload.get("image") or existing_payload.get("saved_image", "").split("/")[-1] or Path(file.filename or original_filename).name
+        saved_image_relative = existing_payload.get("saved_image") or f"bike_landmark_annotations/images/{saved_image_name}"
+    else:
+        safe_original_filename = Path(original_filename or file.filename).name
+        original_stem = Path(safe_original_filename).stem
+        ext = Path(file.filename or safe_original_filename).suffix.lower() or ".jpg"
+        unique_stem = f"{original_stem}_{uuid.uuid4().hex}"
+        saved_image_name = f"{unique_stem}{ext}"
+        saved_image_relative = f"bike_landmark_annotations/images/{saved_image_name}"
+        landmarks_file_name = f"{unique_stem}_bike_landmarks.json"
+        landmarks_path = labels_dir / landmarks_file_name
+        saved_image_path = images_dir / saved_image_name
+        with open(saved_image_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+
+    safe_original_filename = Path(original_filename or file.filename).name
 
     payload = {
+        **existing_payload,
         "image": saved_image_name,
         "original_filename": safe_original_filename,
         "saved_image": saved_image_relative,
         "image_width": parse_dimension(image_width),
         "image_height": parse_dimension(image_height),
-        "bike_landmarks": parsed_landmarks
+        "bike_landmarks": parsed_landmarks,
+        "scale_reference": parsed_scale_reference,
+        "saved_at": utc_timestamp()
     }
 
+    print(f"[SCALE] Saving scale_reference to: {landmarks_path} {parsed_scale_reference}")
     with open(landmarks_path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
 
     return {
-        "status": "success",
+        "status": "saved",
         "saved_image": saved_image_relative,
-        "landmarks_file": f"bike_landmark_annotations/labels/{landmarks_file_name}",
+        "landmarks_file": landmark_source_name(landmarks_path),
+        "file": landmark_source_name(landmarks_path),
+        "source": landmark_source_name(landmarks_path),
         "filename": saved_image_relative,
-        "stem": unique_stem
+        "stem": Path(landmarks_file_name).stem.replace("_bike_landmarks", ""),
+        "scale_reference": parsed_scale_reference
     }
 
 
@@ -1497,12 +1688,16 @@ async def recalculate_bike_metrics(request: Request):
     all_metrics = layers_data.setdefault("metrics", {})
     cm_per_px = data.get("cm_per_px") or layers_data.get("cm_per_px") or infer_cm_per_px_from_metrics(all_metrics)
     bike_landmarks = landmarks_data.get("bike_landmarks", {})
+    scale_reference = landmarks_data.get("scale_reference") or layers_data.get("scale_reference")
     bike_metrics = append_bike_landmark_metrics(all_metrics, bike_landmarks, cm_per_px)
     print(f"[BIKE LANDMARK] Computed bike landmark metrics: {bike_metrics}")
     keypoints = layers_data.get("keypoints") or []
     visible = layers_data.get("visible") or []
     if keypoints and visible:
         append_kops_metric(all_metrics, keypoints, visible, bike_landmarks, cm_per_px)
+    if scale_reference:
+        layers_data["scale_reference"] = normalize_scale_reference(scale_reference, cm_per_px)
+        print(f"[SCALE] Saving scale_reference to: {layers_path} {layers_data['scale_reference']}")
 
     with open(layers_path, "w", encoding="utf-8") as f:
         json.dump(layers_data, f, indent=2)
@@ -1511,7 +1706,8 @@ async def recalculate_bike_metrics(request: Request):
         "message": "Bike landmark metrics recalculated.",
         "filename": safe_filename,
         "metrics": all_metrics,
-        "bike_landmark_metrics": bike_metrics
+        "bike_landmark_metrics": bike_metrics,
+        "scale_reference": layers_data.get("scale_reference")
     }
 
 
@@ -1540,9 +1736,13 @@ async def analyze_bike_geometry(request: Request):
             "metrics": {}
         }
 
-    reference_object = data.get("reference_object")
-    reference_size = data.get("reference_size")
-    reference_unit = data.get("reference_unit")
+    request_scale_reference = parse_scale_reference_payload(data.get("scale_reference")) or {}
+    print(f"[SCALE] Received scale_reference: {request_scale_reference}")
+    reference_object = request_scale_reference.get("reference_object") or data.get("reference_object")
+    reference_size = request_scale_reference.get("reference_size") or data.get("reference_size")
+    reference_unit = request_scale_reference.get("reference_unit") or data.get("reference_unit")
+    wheel_preset = request_scale_reference.get("wheel_preset") or data.get("wheel_preset")
+    wheel_preset_label = request_scale_reference.get("wheel_preset_label") or data.get("wheel_preset_label")
     cm_per_px = None
 
     if image_path and image_path.exists() and reference_object and reference_size and reference_unit:
@@ -1558,6 +1758,8 @@ async def analyze_bike_geometry(request: Request):
             print(f"[BIKE GEOMETRY] Scale calculation skipped: {e}")
 
     print(f"[BIKE GEOMETRY] cm_per_px: {cm_per_px}")
+    scale_reference = build_scale_reference(reference_object, reference_size, reference_unit, cm_per_px, wheel_preset, wheel_preset_label)
+    print(f"[SCALE] Using scale_reference: {scale_reference}")
 
     bike_metrics = calculate_bike_landmark_metrics(bike_landmarks, cm_per_px)
     print(f"[BIKE GEOMETRY] Computed metrics: {bike_metrics}")
@@ -1580,16 +1782,20 @@ async def analyze_bike_geometry(request: Request):
     layers_data.setdefault("keypoints", [])
     layers_data.setdefault("labels", [])
     layers_data.setdefault("metrics", {})
+    layers_data["cm_per_px"] = cm_per_px
+    layers_data["scale_reference"] = scale_reference
     layers_data["metrics"]["bike_landmarks"] = bike_metrics
 
     with open(layers_path, "w", encoding="utf-8") as f:
+        print(f"[SCALE] Saving scale_reference to: {layers_path} {scale_reference}")
         json.dump(layers_data, f, indent=2)
 
     return {
         "message": "Bike geometry analysis complete",
         "pose_detected": False,
         "metrics": metrics,
-        "filename": safe_filename
+        "filename": safe_filename,
+        "scale_reference": scale_reference
     }
 
 

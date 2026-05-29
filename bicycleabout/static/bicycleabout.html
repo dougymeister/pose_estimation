@@ -479,7 +479,7 @@ svg.overlay {
                   </select>
                 </div>
 
-                  <button onclick="openReferenceSizeDialog()">Enter Reference Size</button>
+                  <button onclick="openReferenceSizeDialog()">Wheel Outside Diameter</button>
 
                 <div style="margin-left: auto;">
                   <button onclick="handleProcessAndAnalyze()" style="padding: 10px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: bold;">Process</button>
@@ -703,6 +703,12 @@ window.lastLoadedBikeLandmarkFilename = window.lastLoadedBikeLandmarkFilename ||
 window.lastBikeLandmarkLoadKey = window.lastBikeLandmarkLoadKey || null;
 window.selectedImageFile = window.selectedImageFile || null;
 window.selectedOriginalFilename = window.selectedOriginalFilename || null;
+window.currentScaleReference = window.currentScaleReference || null;
+window.currentBikeLandmarksSource = window.currentBikeLandmarksSource || null;
+window.currentBikeLandmarksMatchedBy = window.currentBikeLandmarksMatchedBy || null;
+window.scaleReferenceDirty = window.scaleReferenceDirty || false;
+window.scaleWarningAcknowledged = window.scaleWarningAcknowledged || false;
+const WHEEL_REFERENCE_OBJECTS = new Set(["front_wheel", "rear_wheel", "wheel_diameter"]);
 
 function isNoPersonPoseResponse(data) {
   return data?.pose_detected === false || data?.reason === "no_person_pose";
@@ -712,6 +718,157 @@ function showNoPersonPoseMessage(data) {
   const message = data?.message || "No rider/person pose was detected. Use Analyze Bike Only for bicycle-only images, or upload a side-view image with a rider for pose analysis.";
   console.warn("[PROCESS] No rider/person pose detected:", data);
   alert(message);
+}
+
+function isWheelReferenceObject(value) {
+  return WHEEL_REFERENCE_OBJECTS.has(value);
+}
+
+function updateReferenceSizeHelp() {
+  const refObject = document.getElementById("referenceObject");
+  const refLabel = document.getElementById("referenceSizeLabel");
+  const refHelp = document.getElementById("referenceSizeHelp");
+  const presetControls = document.getElementById("wheelPresetControls");
+  const isWheel = isWheelReferenceObject(refObject?.value);
+
+  if (refLabel) {
+    refLabel.textContent = isWheel ? "Wheel Outside Diameter:" : "Real-world Length:";
+  }
+  if (refHelp) {
+    refHelp.textContent = isWheel
+      ? "Use actual outside tire diameter, not rim size. Example: 700C road ≈ 27 in; 29er MTB ≈ 29-30 in."
+      : "Enter the real-world size of the selected reference object.";
+  }
+  if (presetControls) {
+    presetControls.style.display = isWheel ? "block" : "none";
+  }
+}
+
+function selectedWheelPresetInfo() {
+  const preset = document.getElementById("wheelSizePreset");
+  if (!preset || preset.value === "custom") {
+    return { wheel_preset: "custom", wheel_preset_label: "Custom" };
+  }
+  return {
+    wheel_preset: preset.value,
+    wheel_preset_label: preset.options[preset.selectedIndex]?.text || ""
+  };
+}
+
+function getCurrentScaleReference() {
+  const refObject = document.getElementById("referenceObject")?.value || "front_wheel";
+  const refSize = document.getElementById("referenceSize")?.value;
+  const refUnit = document.getElementById("referenceUnit")?.value || window.measurementUnit || "in";
+  const presetInfo = selectedWheelPresetInfo();
+
+  return {
+    reference_object: refObject,
+    reference_size: refSize !== "" && refSize != null ? Number(refSize) : null,
+    reference_unit: refUnit,
+    ...presetInfo,
+    note: "Use actual outside tire diameter for wheel-based scaling."
+  };
+}
+
+function setCurrentScaleReferenceFromControls() {
+  window.currentScaleReference = getCurrentScaleReference();
+  updateScaleReferenceWarning();
+  return window.currentScaleReference;
+}
+
+function applyScaleReferenceToControls(scaleReference) {
+  if (!scaleReference) return;
+
+  const refObject = document.getElementById("referenceObject");
+  const refSize = document.getElementById("referenceSize");
+  const refUnit = document.getElementById("referenceUnit");
+  const preset = document.getElementById("wheelSizePreset");
+
+  if (refObject && scaleReference.reference_object) refObject.value = scaleReference.reference_object;
+  if (refSize && scaleReference.reference_size != null) refSize.value = scaleReference.reference_size;
+  if (refUnit && scaleReference.reference_unit) refUnit.value = scaleReference.reference_unit;
+  if (preset && scaleReference.wheel_preset) {
+    preset.value = scaleReference.wheel_preset;
+    if (preset.value !== String(scaleReference.wheel_preset)) {
+      const matchingOption = Array.from(preset.options).find(option => option.dataset.size === String(scaleReference.reference_size));
+      preset.value = matchingOption?.value || "custom";
+    }
+  }
+
+  window.currentScaleReference = scaleReference;
+  console.log("[SCALE] Loaded saved scale_reference:", scaleReference);
+  window.scaleReferenceDirty = false;
+  updateReferenceSizeHelp();
+  updateScaleReferenceWarning();
+}
+
+function applyWheelSizePreset() {
+  const preset = document.getElementById("wheelSizePreset");
+  const refSize = document.getElementById("referenceSize");
+  const refUnit = document.getElementById("referenceUnit");
+  if (!preset || !refSize) return;
+  if (preset.value === "custom") {
+    window.scaleReferenceDirty = true;
+    setCurrentScaleReferenceFromControls();
+    return;
+  }
+
+  refSize.value = preset.options[preset.selectedIndex]?.dataset.size || preset.value;
+  if (refUnit) refUnit.value = "in";
+  window.scaleReferenceDirty = true;
+  window.scaleWarningAcknowledged = false;
+  setCurrentScaleReferenceFromControls();
+}
+
+function markWheelPresetCustom() {
+  const preset = document.getElementById("wheelSizePreset");
+  if (preset) preset.value = "custom";
+  window.scaleReferenceDirty = true;
+  window.scaleWarningAcknowledged = false;
+  setCurrentScaleReferenceFromControls();
+}
+
+function getCurrentBikeTypeValue() {
+  const bikeType = document.getElementById("bikeType")?.value || document.getElementById("filterBike")?.value || "";
+  return String(bikeType).toLowerCase();
+}
+
+function getScaleReferenceForRequest() {
+  window.currentScaleReference = getCurrentScaleReference();
+  updateScaleReferenceWarning();
+  return window.currentScaleReference;
+}
+
+function updateScaleReferenceWarning() {
+  const refObject = document.getElementById("referenceObject")?.value || "front_wheel";
+  const refSizeValue = Number(document.getElementById("referenceSize")?.value);
+  const refUnit = document.getElementById("referenceUnit")?.value || window.measurementUnit || "in";
+  const warningEl = document.getElementById("scaleReferenceWarning");
+
+  const sizeInches = refUnit === "cm" ? refSizeValue / 2.54 : (refUnit === "mm" ? refSizeValue / 25.4 : refSizeValue);
+  const shouldWarn = (
+    (refObject === "front_wheel" || refObject === "rear_wheel") &&
+    Number.isFinite(sizeInches) &&
+    sizeInches < 28 &&
+    getCurrentBikeTypeValue().includes("mtb")
+  );
+
+  if (warningEl) {
+    warningEl.textContent = shouldWarn
+      ? "For many 29er/MTB tires, actual outside diameter is closer to 29-30 in. Using 27 in may understate all measurements."
+      : "";
+    warningEl.style.display = shouldWarn ? "block" : "none";
+  }
+  return shouldWarn;
+}
+
+function warnAboutScaleReference() {
+  const shouldWarn = updateScaleReferenceWarning();
+  if (shouldWarn && !window.scaleWarningAcknowledged) {
+    console.warn("[SCALE REFERENCE] For many 29er/MTB tires, actual outside diameter is closer to 29-30 in. Using 27 in may understate all measurements.");
+    window.scaleWarningAcknowledged = true;
+  }
+  return shouldWarn;
 }
 
 function resetAnalysisForNewImage() {
@@ -729,6 +886,11 @@ function resetAnalysisForNewImage() {
   window.pendingBikeLandmarks = false;
   window.lastLoadedBikeLandmarkFilename = null;
   window.lastBikeLandmarkLoadKey = null;
+  window.currentScaleReference = null;
+  window.currentBikeLandmarksSource = null;
+  window.currentBikeLandmarksMatchedBy = null;
+  window.scaleReferenceDirty = false;
+  window.scaleWarningAcknowledged = false;
 
   if (window.currentActiveButtons) {
     window.currentActiveButtons.forEach(btnId => {
@@ -878,6 +1040,13 @@ async function loadBikeLandmarks(filename) {
     }
 
     window.bikeLandmarks = result.bike_landmarks || {};
+    window.currentBikeLandmarksSource = result.source || null;
+    window.currentBikeLandmarksMatchedBy = result.matched_by || null;
+    window.currentScaleReference = result.scale_reference || null;
+    if (result.scale_reference) {
+      console.log("[SCALE] Loaded saved scale_reference:", result.scale_reference);
+      applyScaleReferenceToControls(result.scale_reference);
+    }
     window.pendingBikeLandmarks = false;
     window.lastLoadedBikeLandmarkFilename = filename;
     renderBikeLandmarkMarkers();
@@ -897,7 +1066,9 @@ async function postBikeLandmarksForFilename(filename, options = {}) {
     image_filename: filename,
     image_width: img?.naturalWidth || null,
     image_height: img?.naturalHeight || null,
-    bike_landmarks: window.bikeLandmarks
+    bike_landmarks: window.bikeLandmarks,
+    scale_reference: getScaleReferenceForRequest(),
+    landmark_source: window.currentBikeLandmarksSource || null
   };
 
   const response = await fetch("/bike-landmarks", {
@@ -910,6 +1081,15 @@ async function postBikeLandmarksForFilename(filename, options = {}) {
     throw new Error(result.error || "Failed to save bike landmarks.");
   }
   console.log("[BIKE LANDMARK] Saved landmarks for processed image:", result);
+  console.log("[SCALE] Saved scale_reference:", getCurrentScaleReference());
+  if (result.scale_reference) {
+    window.currentScaleReference = result.scale_reference;
+    window.latestScaleReference = result.scale_reference;
+  }
+  window.currentBikeLandmarksSource = result.source || result.file || result.path || window.currentBikeLandmarksSource;
+  window.currentBikeLandmarksMatchedBy = null;
+  window.lastBikeLandmarkLoadKey = null;
+  console.log("[BIKE LANDMARK] Saved landmark source:", window.currentBikeLandmarksSource);
 
   const recalcResponse = await fetch("/recalculate-bike-metrics", {
     method: "POST",
@@ -963,6 +1143,8 @@ async function uploadBikeLandmarkAnnotation(options = {}) {
   formData.append("image_width", img?.naturalWidth || "");
   formData.append("image_height", img?.naturalHeight || "");
   formData.append("bike_landmarks", JSON.stringify(window.bikeLandmarks));
+  formData.append("scale_reference", JSON.stringify(getScaleReferenceForRequest()));
+  formData.append("landmark_source", window.currentBikeLandmarksSource || "");
 
   const response = await fetch("/bike-landmark-annotation", {
     method: "POST",
@@ -975,8 +1157,17 @@ async function uploadBikeLandmarkAnnotation(options = {}) {
 
   console.log("[BIKE LANDMARK] Saved annotation image:", result.saved_image);
   console.log("[BIKE LANDMARK] Saved annotation JSON:", result.landmarks_file);
+  console.log("[SCALE] Saved scale_reference:", getCurrentScaleReference());
 
   window.latestAnnotatedFilename = result.saved_image || result.filename || result.stem;
+  if (result.scale_reference) {
+    window.currentScaleReference = result.scale_reference;
+    window.latestScaleReference = result.scale_reference;
+  }
+  window.currentBikeLandmarksSource = result.source || result.file || result.landmarks_file || window.currentBikeLandmarksSource;
+  window.currentBikeLandmarksMatchedBy = null;
+  window.lastBikeLandmarkLoadKey = null;
+  console.log("[BIKE LANDMARK] Saved landmark source:", window.currentBikeLandmarksSource);
   window.pendingBikeLandmarks = false;
   window.lastLoadedBikeLandmarkFilename = null;
 
@@ -1023,14 +1214,15 @@ function getCurrentImageFilenameForBikeGeometry() {
 }
 
 function getBikeGeometryReferencePayload() {
-  const refObjElem = document.getElementById("referenceObject");
-  const refSizeElem = document.getElementById("referenceSize");
-  const refUnitElem = document.getElementById("referenceUnit");
+  const scaleReference = getScaleReferenceForRequest();
 
   return {
-    reference_object: refObjElem?.value || "front_wheel",
-    reference_size: refSizeElem?.value ? Number(refSizeElem.value) : 27.0,
-    reference_unit: refUnitElem?.value || window.measurementUnit || "in"
+    reference_object: scaleReference.reference_object || "front_wheel",
+    reference_size: scaleReference.reference_size || 27.0,
+    reference_unit: scaleReference.reference_unit || "in",
+    wheel_preset: scaleReference.wheel_preset,
+    wheel_preset_label: scaleReference.wheel_preset_label,
+    scale_reference: scaleReference
   };
 }
 
@@ -1055,6 +1247,7 @@ async function analyzeBikeGeometryOnly() {
   }
 
   try {
+    warnAboutScaleReference();
     const filename = await ensureBikeLandmarksSavedForGeometry();
     if (!filename) {
       alert("Save or select an image before analyzing bike geometry.");
@@ -1089,6 +1282,8 @@ async function analyzeBikeGeometryOnly() {
       ...(window.latestPoseMetrics || {}),
       ...result.metrics
     };
+    window.latestScaleReference = result.scale_reference || null;
+    if (result.scale_reference) window.currentScaleReference = result.scale_reference;
     window.latestPoseMetricsSubset = result.metrics;
 
     renderOverlayLabels(window.latestPoseMetricsSubset, []);
@@ -1756,10 +1951,15 @@ let lastPoseType = "seated";
     formData.append("file", fileInput.files[0]);
     formData.append("context", "seated");
     formData.append("layer", "all_fit_points");
-    formData.append("reference_object", "front_wheel");
-    formData.append("reference_size", "27");
-    formData.append("reference_unit", window.measurementUnit || "cm");
+    const scaleReference = getScaleReferenceForRequest();
+    formData.append("reference_object", scaleReference.reference_object || "front_wheel");
+    formData.append("reference_size", scaleReference.reference_size || "27");
+    formData.append("reference_unit", scaleReference.reference_unit || "in");
+    formData.append("wheel_preset", scaleReference.wheel_preset || "");
+    formData.append("wheel_preset_label", scaleReference.wheel_preset_label || "");
+    formData.append("scale_reference", JSON.stringify(scaleReference));
 
+    warnAboutScaleReference();
     fetch("/annotate", {
         method: "POST",
         body: formData
@@ -1782,6 +1982,8 @@ let lastPoseType = "seated";
         window.latestAnnotatedFilename = data.filename;
         window.lastBikeLandmarkLoadKey = null;
         window.latestPoseMetrics = data.metrics;
+        window.latestScaleReference = data.scale_reference || null;
+        if (data.scale_reference) window.currentScaleReference = data.scale_reference;
         window.latestPoseKeypoints = data.keypoints || [];
         window.latestKeypoints = window.latestPoseKeypoints;
         renderOverlayLabels(window.latestPoseMetrics, window.latestPoseKeypoints);
@@ -2066,6 +2268,7 @@ function applyOverlay(layerName, buttonElement = null) {
     // Code to handle pixel to physical size button and popup dialog input
 function openReferenceSizeDialog() {
   document.getElementById('referenceSizeModal').style.display = 'flex';
+  updateReferenceSizeHelp();
 }
 
 function closeReferenceSizeDialog() {
@@ -2085,7 +2288,7 @@ function submitReferenceSize() {
   const refData = {
     object,
     size,
-    unit: window.measurementUnit  // was  unit - created menu global setting
+    unit
   };
 
   // You can send this to the server or store it globally
@@ -2093,6 +2296,8 @@ function submitReferenceSize() {
 
   // Store in global JS object for later use
   window.referenceSize = refData;
+  window.scaleReferenceDirty = true;
+  setCurrentScaleReferenceFromControls();
 
   closeReferenceSizeDialog();
 }
@@ -2235,22 +2440,17 @@ if (!file && !window.latestPoseFilename) {
   formData.append("context", "cycling");
   formData.append("layer", "all");
 
-  const refObjElem = document.getElementById("referenceObject");
-  const refSizeElem = document.getElementById("referenceSize");
+  const scaleReference = getScaleReferenceForRequest();
 
-  if (refObjElem && refObjElem.value) {
-    formData.append("reference_object", refObjElem.value);
-  }
-
-  if (refSizeElem && refSizeElem.value) {
-    formData.append("reference_size", refSizeElem.value);
-  }
-
-  if (window.measurementUnit) {
-    formData.append("reference_unit", window.measurementUnit);
-  }
+  formData.append("reference_object", scaleReference.reference_object || "front_wheel");
+  formData.append("reference_size", scaleReference.reference_size || "27");
+  formData.append("reference_unit", scaleReference.reference_unit || "in");
+  formData.append("wheel_preset", scaleReference.wheel_preset || "");
+  formData.append("wheel_preset_label", scaleReference.wheel_preset_label || "");
+  formData.append("scale_reference", JSON.stringify(scaleReference));
 
   try {
+    warnAboutScaleReference();
     const response = await fetch("/annotate", {
       method: "POST",
       body: formData
@@ -2281,6 +2481,8 @@ if (!file && !window.latestPoseFilename) {
     window.lastBikeLandmarkLoadKey = null;
     window.latestPoseMetrics = metrics;
     window.latestPoseKeypoints = keypoints;
+    window.latestScaleReference = result.scale_reference || null;
+    if (result.scale_reference) window.currentScaleReference = result.scale_reference;
     window.latestPoseMetricsSubset = metrics;
 
     // Update the image
@@ -2482,7 +2684,7 @@ function loadFeedback() {
     <p>Select a known object visible in the image and enter its real-world size.</p>
 
     <label for="referenceObject">Reference Object:</label>
-    <select id="referenceObject" style="width: 100%; margin-bottom: 10px;">
+    <select id="referenceObject" onchange="window.scaleReferenceDirty = true; window.scaleWarningAcknowledged = false; updateReferenceSizeHelp(); setCurrentScaleReferenceFromControls();" style="width: 100%; margin-bottom: 10px;">
         <option value="front_wheel">Front Wheel Diameter</option>
         <option value="rear_wheel">Rear Wheel Diameter</option>
       <option value="wheel_diameter">Wheel Diameter</option>
@@ -2492,13 +2694,27 @@ function loadFeedback() {
       <option value="known_distance">Custom Known Distance</option>
     </select>
 
-    <label for="referenceSize">Real-world Length:</label>
-    <input type="number" id="referenceSize" min="0" step="0.1" value="27" placeholder="e.g. 27.5" style="width: 100%; margin-bottom: 10px;">
+    <div id="wheelPresetControls" style="margin-bottom: 10px;">
+      <label for="wheelSizePreset">Wheel Size Preset:</label>
+      <select id="wheelSizePreset" onchange="applyWheelSizePreset()" style="width: 100%; margin-bottom: 8px;">
+        <option value="custom">Custom</option>
+        <option value="700c_road" data-size="27.0">700C road: 27.0 in</option>
+        <option value="700c_gravel" data-size="28.0">700C gravel: 28.0 in</option>
+        <option value="mtb_27_5" data-size="28.0">27.5 MTB: 28.0 in</option>
+        <option value="mtb_29er" data-size="29.5">29er MTB: 29.5 in</option>
+      </select>
+    </div>
+
+    <label id="referenceSizeLabel" for="referenceSize">Wheel Outside Diameter:</label>
+    <input type="number" id="referenceSize" min="0" step="0.1" value="27" placeholder="e.g. 29.5" oninput="markWheelPresetCustom()" style="width: 100%; margin-bottom: 6px;">
+    <p id="referenceSizeHelp" style="font-size: 0.9em; margin: 0 0 6px; color: #555;">Use actual outside tire diameter, not rim size. Example: 700C road ≈ 27 in; 29er MTB ≈ 29-30 in.</p>
+    <p id="scaleReferenceWarning" style="display:none; font-size: 0.9em; margin: 0 0 10px; color: #9a5b00; font-weight: 600;"></p>
 
     <label for="referenceUnit">Unit:</label>
-    <select id="referenceUnit" style="width: 100%; margin-bottom: 20px;">
+    <select id="referenceUnit" onchange="window.scaleReferenceDirty = true; window.scaleWarningAcknowledged = false; setCurrentScaleReferenceFromControls();" style="width: 100%; margin-bottom: 20px;">
       <option value="in">inch</option>
-        <option value="cm">cm</option>
+      <option value="cm">cm</option>
+      <option value="mm">mm</option>
     </select>
 
     <div style="text-align: right;">
