@@ -519,11 +519,130 @@ def compute_knee_pedal_spindle_offset(keypoints, visible, bike_landmarks, cm_per
 def append_kops_metric(all_metrics, keypoints, visible, bike_landmarks, cm_per_px=None):
     metric = compute_knee_pedal_spindle_offset(keypoints, visible, bike_landmarks, cm_per_px)
     if metric and metric.get("valid"):
+        metric["measurement_mode"] = "single_image"
+        metric["evaluated_from"] = "single_frame"
+        metric["capture_requirement"] = "kops_crank_window"
+        metric["valid_for_feedback"] = True
+        metric["validity_reason"] = metric.get("status_note")
         all_metrics["knee_pedal_spindle"] = {
             "distances": [metric],
             "angles": []
         }
     return metric
+
+
+def compute_side_pedal_bottom_validity(side, keypoints, visible, bike_landmarks):
+    bottom_bracket = get_bike_landmark_point(bike_landmarks or {}, "bottom_bracket")
+    ankle_idx = 15 if side == "left" else 16
+    ankle_name = f"{side}_ankle"
+    print(f"[CRANK VALIDITY] side={side}")
+    print("[CRANK VALIDITY] bottom_bracket source: bike_landmarks")
+    print(f"[CRANK VALIDITY] bottom_bracket point: {bottom_bracket}")
+    print(f"[CRANK VALIDITY] crank_proxy_point: {ankle_name}")
+
+    base_metadata = {
+        "measurement_mode": "single_image",
+        "evaluated_from": "single_frame",
+        "capture_requirement": "pedal_near_bottom",
+        "requires": ["pedal_near_bottom"],
+        "crank_proxy_point": ankle_name,
+        "bottom_bracket_landmark": "bottom_bracket",
+    }
+
+    if bottom_bracket is None:
+        reason = "Knee and hip fit targets require the measured-side pedal near bottom of stroke; bottom bracket landmark is missing."
+        print(f"[CRANK VALIDITY] valid_for_knee_feedback false reason={reason}")
+        return {
+            **base_metadata,
+            "valid_for_feedback": False,
+            "status": "not_evaluated",
+            "confidence": "low",
+            "validity_reason": reason,
+        }
+
+    if not is_valid_point(ankle_idx, keypoints, visible):
+        reason = f"Knee and hip fit targets require the measured-side pedal near bottom of stroke; {ankle_name} was not reliable enough to use as a pedal-position proxy."
+        print(f"[CRANK VALIDITY] ankle proxy invalid: index={ankle_idx}")
+        print(f"[CRANK VALIDITY] valid_for_knee_feedback false reason={reason}")
+        return {
+            **base_metadata,
+            "valid_for_feedback": False,
+            "status": "not_evaluated",
+            "confidence": "low",
+            "validity_reason": reason,
+        }
+
+    ankle = [float(keypoints[ankle_idx][0]), float(keypoints[ankle_idx][1])]
+    dx = ankle[0] - bottom_bracket[0]
+    dy = ankle[1] - bottom_bracket[1]
+    if dx == 0 and dy == 0:
+        crank_angle_deg = None
+        valid = False
+    else:
+        crank_angle_deg = float(np.degrees(np.arctan2(dy, dx)))
+        normalized_angle = crank_angle_deg if crank_angle_deg >= 0 else crank_angle_deg + 360.0
+        valid = 70.0 <= normalized_angle <= 110.0
+
+    print(f"[CRANK VALIDITY] pedal proxy point ({ankle_name}): {ankle}")
+    print(f"[CRANK VALIDITY] computed crank_angle_deg: {crank_angle_deg}")
+    print(f"[CRANK VALIDITY] valid_for_knee_feedback: {valid}")
+    print(f"[CRANK VALIDITY] valid_for_hip_feedback: {valid}")
+
+    if valid:
+        reason = "Measured-side ankle proxy is near bottom of stroke for single-image knee and hip fit feedback."
+        return {
+            **base_metadata,
+            "valid_for_feedback": True,
+            "status": "evaluated",
+            "confidence": "medium",
+            "validity_reason": reason,
+            "crank_angle_deg": crank_angle_deg,
+            "crank_angle_window_deg": [70.0, 110.0],
+            "pedal_proxy_point": ankle,
+        }
+
+    reason = "Knee-angle and hip-angle targets require the measured-side pedal near bottom of stroke. Retake the image with the pedal near 6 o'clock or use video analysis."
+    print(f"[CRANK VALIDITY] reason when not evaluated: {reason}")
+    return {
+        **base_metadata,
+        "valid_for_feedback": False,
+        "status": "not_evaluated",
+        "confidence": "low",
+        "validity_reason": reason,
+        "crank_angle_deg": crank_angle_deg,
+        "crank_angle_window_deg": [70.0, 110.0],
+        "pedal_proxy_point": ankle,
+    }
+
+
+def apply_crank_position_feedback_validity(all_metrics, keypoints, visible, bike_landmarks):
+    if not isinstance(all_metrics, dict):
+        return
+
+    validity_by_side = {
+        "left": compute_side_pedal_bottom_validity("left", keypoints, visible, bike_landmarks),
+        "right": compute_side_pedal_bottom_validity("right", keypoints, visible, bike_landmarks),
+    }
+
+    for layer_name in ("knee_angle", "hip_angle"):
+        layer_metrics = all_metrics.get(layer_name)
+        if not isinstance(layer_metrics, dict):
+            continue
+        for entry in layer_metrics.get("angles", []):
+            key = str(entry.get("key", ""))
+            side = "left" if "_left_" in key else "right" if "_right_" in key else None
+            if side not in validity_by_side:
+                continue
+            validity = validity_by_side[side]
+            entry.update(validity)
+            if layer_name == "knee_angle":
+                entry["validity_reason"] = validity.get("validity_reason", "").replace("Knee-angle and hip-angle", "Knee-angle")
+            elif layer_name == "hip_angle":
+                entry["validity_reason"] = validity.get("validity_reason", "").replace("Knee-angle and hip-angle", "Hip-angle")
+            print(
+                f"[CRANK VALIDITY] {entry.get('key')} valid_for_feedback="
+                f"{entry.get('valid_for_feedback')} reason={entry.get('validity_reason')}"
+            )
 
 
 def load_bike_landmarks_for_filename(filename):
@@ -536,6 +655,25 @@ def load_bike_landmarks_for_filename(filename):
         payload = json.load(f)
 
     return payload.get("bike_landmarks", {}), payload
+
+
+def load_bike_landmarks_for_pose_analysis(*filenames):
+    for filename in filenames:
+        if not filename:
+            continue
+
+        landmarks_path, payload, matched_by = find_bike_landmark_record(filename)
+        bike_landmarks = payload.get("bike_landmarks", {}) if payload else {}
+        if bike_landmarks:
+            print(
+                f"[CRANK VALIDITY] Loaded bike landmarks for pose analysis from "
+                f"{landmark_source_name(landmarks_path)} matched_by={matched_by}"
+            )
+            print(f"[CRANK VALIDITY] Available bike landmark keys: {list(bike_landmarks.keys())}")
+            return bike_landmarks, payload
+
+    print("[CRANK VALIDITY] No saved bike landmarks found for pose analysis.")
+    return {}, None
 
 
 def append_bike_landmark_metrics(all_metrics, bike_landmarks, cm_per_px=None):
@@ -1528,10 +1666,11 @@ async def annotate_file(
 
                 del metrics["distances_by_side"]
 
-        bike_landmarks, _ = load_bike_landmarks_for_filename(input_path.name)
+        bike_landmarks, _ = load_bike_landmarks_for_pose_analysis(input_path.name, file.filename)
         if bike_landmarks:
             append_bike_landmark_metrics(all_metrics, bike_landmarks, cm_per_px)
             append_kops_metric(all_metrics, keypoints, visible, bike_landmarks, cm_per_px)
+        apply_crank_position_feedback_validity(all_metrics, keypoints, visible, bike_landmarks)
 
         # ---------------------------------------------------------
         # GEOMETRY SANITY CHECK

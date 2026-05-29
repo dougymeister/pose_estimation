@@ -18,8 +18,8 @@
             "handlebar_center"
           ],
           "distance_px": 443.11285244280606,
-          "distance_cm": 65.18231215426164,
-          "distance_in": 25.662327619788044,
+          "distance_cm": 65.18232407175343,
+          "distance_in": 25.662332311713946,
           "label": "65.2 cm",
           "label_px": "443 px",
           "label_cm": "65.2 cm",
@@ -54,8 +54,8 @@
             "handlebar_center"
           ],
           "distance_px": 443.0,
-          "distance_cm": 65.16571145510835,
-          "distance_in": 25.655791911459982,
+          "distance_cm": 65.16572336956499,
+          "distance_in": 25.65579660219094,
           "label": "65.2 cm",
           "label_px": "443 px",
           "label_cm": "65.2 cm",
@@ -90,8 +90,8 @@
             "handlebar_center"
           ],
           "distance_px": 10.0,
-          "distance_cm": 1.4710092879256964,
-          "distance_in": 0.5791375149313766,
+          "distance_cm": 1.471009556875056,
+          "distance_in": 0.5791376208169512,
           "label": "1.5 cm",
           "label_px": "10 px",
           "label_cm": "1.5 cm",
@@ -126,8 +126,8 @@
             "saddle_center"
           ],
           "distance_px": 479.57689685805343,
-          "distance_cm": 70.54620695527804,
-          "distance_in": 27.774097226487417,
+          "distance_cm": 70.54621985346797,
+          "distance_in": 27.77410230451495,
           "label": "70.5 cm",
           "label_px": "479 px",
           "label_cm": "70.5 cm",
@@ -162,8 +162,8 @@
             "front_axle"
           ],
           "distance_px": 722.1357213155986,
-          "distance_cm": 106.22683531981679,
-          "distance_in": 41.82158870858928,
+          "distance_cm": 106.22685474161078,
+          "distance_in": 41.821596354964875,
           "label": "106.2 cm",
           "label_px": "722 px",
           "label_cm": "106.2 cm",
@@ -198,8 +198,8 @@
             "front_axle"
           ],
           "distance_px": 418.7600745056768,
-          "distance_cm": 61.599995901030724,
-          "distance_in": 24.251966890169577,
+          "distance_cm": 61.600007163556114,
+          "distance_in": 24.25197132423469,
           "label": "61.6 cm",
           "label_px": "418 px",
           "label_cm": "61.6 cm",
@@ -234,8 +234,8 @@
             "rear_axle"
           ],
           "distance_px": 307.8830946966722,
-          "distance_cm": 45.28988918941115,
-          "distance_in": 17.83066503520124,
+          "distance_cm": 45.28989746990727,
+          "distance_in": 17.830668295239082,
           "label": "45.3 cm",
           "label_px": "307 px",
           "label_cm": "45.3 cm",
@@ -260,12 +260,12 @@
       "angles": []
     }
   },
-  "cm_per_px": 0.14710092879256964,
+  "cm_per_px": 0.1471009556875056,
   "scale_reference": {
     "reference_object": "front_wheel",
     "reference_size": 29.0,
     "reference_unit": "in",
-    "cm_per_px": 0.14710092879256964,
+    "cm_per_px": 0.1471009556875056,
     "wheel_preset": "custom",
     "wheel_preset_label": "Custom",
     "note": "Use actual outside tire diameter for wheel-based scaling.",
@@ -280,13 +280,13 @@
       },
       {
         "label": "front_wheel",
-        "diameter_px": 500.74462890625
+        "diameter_px": 500.7445373535156
       }
     ],
     "selected_wheel_label": "front_wheel",
-    "selected_wheel_diameter_px": 500.74462890625,
+    "selected_wheel_diameter_px": 500.7445373535156,
     "scale_selection_reason": "largest labeled front_wheel, assuming outside tire diameter",
     "scale_selection_confidence": "exact",
-    "computed_cm_per_px": 0.14710092879256964
+    "computed_cm_per_px": 0.1471009556875056
   }
 }

@@ -1,6 +1,6 @@
 {
   "filename": "dybike_good_download_26fabcc8a4a442799d86bc752d1e9399.jpg",
-  "image_filename": "dybike_good_download_7a706150627e4811bc3396cdd200c670.jpg",
+  "image_filename": "dybike_good_download_0beb8efeb9f34908b8cd9d67eb4d9190.jpg",
   "image_width": 896,
   "image_height": 1195,
   "bike_landmarks": {
@@ -40,7 +40,7 @@
       "visible": true
     }
   },
-  "image": "dybike_good_download_7a706150627e4811bc3396cdd200c670.jpg",
+  "image": "dybike_good_download_0beb8efeb9f34908b8cd9d67eb4d9190.jpg",
   "original_filename": "dybike_good_download.jpg",
   "saved_image": "bike_landmark_annotations/images/dybike_good_download.jpg",
   "scale_reference": {
@@ -67,5 +67,5 @@
     "scale_selection_confidence": "exact",
     "computed_cm_per_px": 0.2190250937949616
   },
-  "saved_at": "2026-05-29T13:55:28.906864+00:00"
+  "saved_at": "2026-05-29T15:28:05.082747+00:00"
 }

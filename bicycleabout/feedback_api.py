@@ -142,8 +142,10 @@ def generate_feedback(metrics: Dict[str, Any], unit: str = "cm", bike_type: str 
             # Convert value to match rule unit
             converted_value = convert_unit(value, from_unit=unit, to_unit=rule_unit)
 
-            # Status logic
-            if target_min is not None and target_max is not None:
+            if entry.get("valid_for_feedback") is False:
+                status = "Not Evaluated"
+                explanation = entry.get("validity_reason") or entry.get("reason") or explanation
+            elif target_min is not None and target_max is not None:
                 if converted_value < target_min:
                     status = "Too Low"
                 elif converted_value > target_max:

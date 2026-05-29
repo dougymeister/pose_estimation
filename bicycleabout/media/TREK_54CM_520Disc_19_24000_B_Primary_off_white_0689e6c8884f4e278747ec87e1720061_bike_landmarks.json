@@ -47,7 +47,7 @@
     "reference_object": "front_wheel",
     "reference_size": 29.0,
     "reference_unit": "in",
-    "cm_per_px": 0.14710092879256964,
+    "cm_per_px": 0.1471009556875056,
     "wheel_preset": "custom",
     "wheel_preset_label": "Custom",
     "note": "Use actual outside tire diameter for wheel-based scaling.",
@@ -62,14 +62,14 @@
       },
       {
         "label": "front_wheel",
-        "diameter_px": 500.74462890625
+        "diameter_px": 500.7445373535156
       }
     ],
     "selected_wheel_label": "front_wheel",
-    "selected_wheel_diameter_px": 500.74462890625,
+    "selected_wheel_diameter_px": 500.7445373535156,
     "scale_selection_reason": "largest labeled front_wheel, assuming outside tire diameter",
     "scale_selection_confidence": "exact",
-    "computed_cm_per_px": 0.14710092879256964
+    "computed_cm_per_px": 0.1471009556875056
   },
-  "saved_at": "2026-05-29T14:04:53.093500+00:00"
+  "saved_at": "2026-05-29T15:32:47.325252+00:00"
 }
