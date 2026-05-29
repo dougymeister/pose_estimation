@@ -1,0 +1,31 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Model weights
+*.pt
+
+# Generated media / uploads
+media/
+uploaded/
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Local generated CSV/video outputs
+src/*.csv
+src/*.mp4
+src/*.png
+
+# Local experiment / old deployment folders
+fastapi-aws-deployment/
+getimages/
+image_annotate_layers/
+doug_setup_steps/
+
+# Old one-off scripts / backups
+pose_estimation_callable1.py
+pose_estimation_callable1_backup*.py
+pose_estimation_callable1_copy*.py
