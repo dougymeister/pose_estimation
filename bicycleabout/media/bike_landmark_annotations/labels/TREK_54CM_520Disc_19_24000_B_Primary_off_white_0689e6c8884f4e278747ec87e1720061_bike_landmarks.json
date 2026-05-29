@@ -1,0 +1,44 @@
+{
+  "image": "TREK_54CM_520Disc_19_24000_B_Primary_off_white_0689e6c8884f4e278747ec87e1720061.jpg",
+  "original_filename": "TREK_54CM_520Disc_19_24000_B_Primary_off_white.jpg",
+  "saved_image": "bike_landmark_annotations/images/TREK_54CM_520Disc_19_24000_B_Primary_off_white_0689e6c8884f4e278747ec87e1720061.jpg",
+  "image_width": 1196,
+  "image_height": 896,
+  "bike_landmarks": {
+    "front_axle": {
+      "x": 948,
+      "y": 649,
+      "visible": true
+    },
+    "rear_axle": {
+      "x": 229,
+      "y": 644,
+      "visible": true
+    },
+    "bottom_bracket": {
+      "x": 533,
+      "y": 682,
+      "visible": true
+    },
+    "saddle_center": {
+      "x": 408,
+      "y": 219,
+      "visible": true
+    },
+    "handlebar_center": {
+      "x": 851,
+      "y": 229,
+      "visible": true
+    },
+    "visible_hood_or_grip": {
+      "x": 942,
+      "y": 209,
+      "visible": true
+    },
+    "visible_pedal_spindle": {
+      "x": 651,
+      "y": 701,
+      "visible": true
+    }
+  }
+}

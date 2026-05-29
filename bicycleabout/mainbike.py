@@ -568,6 +568,8 @@ def compute_conversion_factor(keypoints, image_path, reference_object, reference
     default_return = (None, [])
 
     try:
+        print(f"[REF SCALE] image_path={image_path}")
+        print(f"[REF SCALE] reference_object={reference_object}, reference_size={reference_size}, reference_unit={reference_unit}")
         model = wheel_model  #YOLO(WHEEL_MODEL_PATH)
         results = model(image_path)
         boxes = results[0].boxes
@@ -587,14 +589,59 @@ def compute_conversion_factor(keypoints, image_path, reference_object, reference
             print("[REF SCALE] No wheels detected.")
             return default_return
 
-        # Filter by reference_object (e.g., 'front_wheel')
-        ref_diameters = [d for label, d in diameters_px if label == reference_object]
+        def normalize_wheel_label(value):
+            return str(value or "").strip().lower().replace(" ", "_").replace("-", "_")
 
-        if not ref_diameters:
-            print(f"[REF SCALE] No matching {reference_object} found.")
+        print(f"[REF SCALE] Wheel candidates: {diameters_px}")
+        requested_label = normalize_wheel_label(reference_object)
+        wheel_like_labels = {
+            "front_wheel",
+            "frontwheel",
+            "front",
+            "rear_wheel",
+            "rearwheel",
+            "rear",
+            "wheel",
+            "wheel_diameter",
+            "undefined",
+            "unknown",
+        }
+
+        exact_labels = {requested_label}
+        if requested_label == "front_wheel":
+            exact_labels = {"front_wheel", "frontwheel", "front"}
+        elif requested_label == "rear_wheel":
+            exact_labels = {"rear_wheel", "rearwheel", "rear"}
+        elif requested_label == "wheel_diameter":
+            exact_labels = {"wheel_diameter", "wheel", "front_wheel", "rear_wheel", "frontwheel", "rearwheel"}
+
+        exact_candidates = [
+            (label, float(diameter))
+            for label, diameter in diameters_px
+            if normalize_wheel_label(label) in exact_labels and float(diameter) > 0
+        ]
+        fallback_candidates = [
+            (label, float(diameter))
+            for label, diameter in diameters_px
+            if normalize_wheel_label(label) in wheel_like_labels and float(diameter) > 0
+        ]
+
+        selected_label = None
+        selected_diameter_px = None
+        selection_confidence = "exact"
+        if exact_candidates:
+            selected_label, selected_diameter_px = max(exact_candidates, key=lambda item: item[1])
+            selection_reason = f"largest labeled {reference_object}, assuming outside tire diameter"
+        elif fallback_candidates:
+            selected_label, selected_diameter_px = max(fallback_candidates, key=lambda item: item[1])
+            selection_confidence = "fallback"
+            selection_reason = f"No exact {reference_object} detection found; used largest wheel-like detection."
+        else:
+            print(f"[REF SCALE] No matching {reference_object} found. Detected labels: {diameters_px}")
             return default_return
 
-        avg_diameter_px = sum(ref_diameters) / len(ref_diameters)
+        print(f"[REF SCALE] Selected {selected_label} diameter_px: {selected_diameter_px}")
+        print(f"[REF SCALE] Selection reason: {selection_reason}")
 
         # Convert real-world reference size to cm
         if reference_unit == "in":
@@ -606,9 +653,20 @@ def compute_conversion_factor(keypoints, image_path, reference_object, reference
         else:
             raise ValueError("Unsupported unit")
 
-        conversion_factor = reference_cm / avg_diameter_px  # cm per pixel
+        conversion_factor = reference_cm / selected_diameter_px  # cm per pixel
         print(f"[REF SCALE] Using {reference_object}: {conversion_factor:.4f} cm/px")
-        return conversion_factor, diameters_px
+        metadata = {
+            "detected_wheel_candidates": [
+                {"label": label, "diameter_px": float(diameter)}
+                for label, diameter in diameters_px
+            ],
+            "selected_wheel_label": selected_label,
+            "selected_wheel_diameter_px": selected_diameter_px,
+            "scale_selection_reason": selection_reason,
+            "scale_selection_confidence": selection_confidence,
+            "computed_cm_per_px": conversion_factor
+        }
+        return conversion_factor, diameters_px, metadata
 
     except ValueError:
         print("[WARN] Invalid reference size input.")
@@ -827,6 +885,85 @@ def normalize_scale_reference(scale_reference, cm_per_px=None):
     )
 
 
+SCALE_COMPUTED_METADATA_FIELDS = [
+    "cm_per_px",
+    "computed_cm_per_px",
+    "detected_wheel_candidates",
+    "selected_wheel_label",
+    "selected_wheel_diameter_px",
+    "scale_selection_reason",
+    "scale_selection_confidence",
+]
+
+
+def scale_reference_identity(scale_reference):
+    if not isinstance(scale_reference, dict):
+        return {
+            "reference_object": None,
+            "reference_size": None,
+            "reference_unit": None,
+            "wheel_preset": None,
+        }
+
+    def normalize_string(value):
+        return str(value).strip().lower() if value not in (None, "") else None
+
+    try:
+        reference_size = (
+            float(scale_reference.get("reference_size"))
+            if scale_reference.get("reference_size") not in (None, "")
+            else None
+        )
+    except (TypeError, ValueError):
+        reference_size = scale_reference.get("reference_size")
+
+    return {
+        "reference_object": normalize_string(scale_reference.get("reference_object")),
+        "reference_size": reference_size,
+        "reference_unit": normalize_string(scale_reference.get("reference_unit")),
+        "wheel_preset": normalize_string(scale_reference.get("wheel_preset")),
+    }
+
+
+def merge_scale_reference_preserving_computed_metadata(existing_scale_reference, incoming_scale_reference):
+    scale_source = incoming_scale_reference if incoming_scale_reference is not None else existing_scale_reference
+    normalized_scale = normalize_scale_reference(scale_source)
+    if not isinstance(normalized_scale, dict):
+        return normalized_scale
+
+    existing_identity = scale_reference_identity(existing_scale_reference)
+    incoming_identity = scale_reference_identity(scale_source)
+    print(f"[SCALE] Existing scale identity: {existing_identity}")
+    print(f"[SCALE] Incoming scale identity: {incoming_identity}")
+
+    if isinstance(existing_scale_reference, dict) and existing_identity == incoming_identity:
+        print("[SCALE] Scale identity unchanged; preserving computed cm_per_px metadata")
+        for field in SCALE_COMPUTED_METADATA_FIELDS:
+            if field in existing_scale_reference:
+                normalized_scale[field] = existing_scale_reference.get(field)
+        return normalized_scale
+
+    if existing_scale_reference is None and isinstance(incoming_scale_reference, dict):
+        for field in SCALE_COMPUTED_METADATA_FIELDS:
+            if field in incoming_scale_reference:
+                normalized_scale[field] = incoming_scale_reference.get(field)
+        return normalized_scale
+
+    print("[SCALE] Scale identity changed; clearing computed scale metadata for recompute")
+    for field in SCALE_COMPUTED_METADATA_FIELDS:
+        normalized_scale.pop(field, None)
+    normalized_scale["cm_per_px"] = None
+    return normalized_scale
+
+
+def preserve_computed_scale_metadata_if_identity_unchanged(normalized_scale, existing_scale, incoming_scale):
+    merged_scale = merge_scale_reference_preserving_computed_metadata(existing_scale, incoming_scale)
+    if not isinstance(normalized_scale, dict) or not isinstance(merged_scale, dict):
+        return merged_scale
+    normalized_scale.update(merged_scale)
+    return normalized_scale
+
+
 def parse_scale_reference_payload(raw_scale_reference):
     if raw_scale_reference in (None, ""):
         return None
@@ -910,6 +1047,278 @@ def landmark_source_name(path):
         return relative.as_posix()
     except ValueError:
         return path.name
+
+
+def find_bike_landmark_record(image_filename):
+    safe_filename = Path(str(image_filename).replace("\\", "/")).name
+    stem = Path(safe_filename).stem
+    exact_path = MEDIA_DIR / f"{stem}_bike_landmarks.json"
+    dataset_labels_dir = MEDIA_DIR / "bike_landmark_annotations" / "labels"
+
+    processed_candidates = []
+    dataset_candidates = []
+    landmarks_path = None
+    matched_by = None
+
+    print(f"[BIKE LANDMARK] Exact lookup path: {exact_path}")
+    if exact_path.exists():
+        landmarks_path = exact_path
+        matched_by = "exact"
+    else:
+        processed_candidates = list(MEDIA_DIR.glob(f"{stem}_*_bike_landmarks.json"))
+        if dataset_labels_dir.exists():
+            dataset_candidates = list(dataset_labels_dir.glob(f"{stem}_*_bike_landmarks.json"))
+        fallback_candidates = processed_candidates + dataset_candidates
+        if fallback_candidates:
+            landmarks_path = max(fallback_candidates, key=landmark_candidate_sort_key)
+            matched_by = (
+                "landmark_dataset_fallback"
+                if dataset_labels_dir in landmarks_path.parents
+                else "processed_uuid_fallback"
+            )
+
+    print(f"[BIKE LANDMARK] Processed fallback candidates: {[p.name for p in processed_candidates]}")
+    print(f"[BIKE LANDMARK] Dataset fallback candidates: {[p.name for p in dataset_candidates]}")
+
+    if not landmarks_path:
+        return None, {}, None
+
+    payload = load_json_payload(landmarks_path)
+    print(f"[BIKE LANDMARK] Selected candidate: {landmarks_path.name}")
+    print(f"[BIKE LANDMARK] Loaded landmarks from: {landmarks_path}")
+    print(f"[SCALE] Loaded scale_reference from: {landmarks_path} {payload.get('scale_reference')}")
+    return landmarks_path, payload, matched_by
+
+
+def merge_scale_reference(request_scale_reference, saved_scale_reference):
+    merged = {}
+    if isinstance(saved_scale_reference, dict):
+        merged.update(saved_scale_reference)
+    if isinstance(request_scale_reference, dict):
+        for key, value in request_scale_reference.items():
+            if value not in (None, ""):
+                merged[key] = value
+    return normalize_scale_reference(merged)
+
+
+def resolve_existing_image_path_for_scale(image_name, selected_landmark_path=None, request_payload=None):
+    request_payload = request_payload or {}
+    checked_paths = []
+    candidates = []
+
+    def add_candidate(path_like):
+        if not path_like:
+            return
+        path = Path(str(path_like).replace("\\", "/"))
+        if path.is_absolute():
+            candidate = path
+        else:
+            candidate = MEDIA_DIR / path
+        if candidate not in candidates:
+            candidates.append(candidate)
+
+    for key in ("image_path", "file_path"):
+        add_candidate(request_payload.get(key))
+
+    image_name_path = Path(str(image_name).replace("\\", "/")).name
+    image_stem = Path(image_name_path).stem
+    add_candidate(image_name_path)
+    add_candidate(Path("bike_landmark_annotations") / "images" / image_name_path)
+
+    if selected_landmark_path:
+        landmark_stem = selected_landmark_path.stem
+        if landmark_stem.endswith("_bike_landmarks"):
+            landmark_stem = landmark_stem[:-len("_bike_landmarks")]
+        for ext in (".jpg", ".png", ".jpeg"):
+            add_candidate(f"{landmark_stem}{ext}")
+
+    annotation_images_dir = MEDIA_DIR / "bike_landmark_annotations" / "images"
+    for ext in ("jpg", "png", "jpeg"):
+        for match in annotation_images_dir.glob(f"{image_stem}_*.{ext}"):
+            add_candidate(match)
+
+    for match in MEDIA_DIR.glob(f"{image_stem}.*"):
+        if match.suffix.lower() in {".jpg", ".png", ".jpeg"}:
+            add_candidate(match)
+    for ext in ("jpg", "png", "jpeg"):
+        for match in MEDIA_DIR.glob(f"{image_stem}_*.{ext}"):
+            add_candidate(match)
+
+    for candidate in candidates:
+        checked_paths.append(str(candidate))
+        print(f"[SCALE] Checking image path candidate: {candidate}")
+        if candidate.exists():
+            print(f"[SCALE] Selected image path for scale: {candidate}")
+            return candidate, checked_paths
+
+    return None, checked_paths
+
+
+def resolve_scale_reference_for_bike_metrics(image_name, scale_reference, image_path=None):
+    resolved_scale = normalize_scale_reference(scale_reference)
+    if not resolved_scale:
+        return None, None, ["Bike metrics are pixel-only because no valid scale_reference was provided."], None
+
+    reference_object = resolved_scale.get("reference_object")
+    reference_size = resolved_scale.get("reference_size")
+    reference_unit = resolved_scale.get("reference_unit")
+    if not (reference_object and reference_size and reference_unit):
+        return resolved_scale, None, ["Bike metrics are pixel-only because scale_reference is incomplete."], None
+
+    try:
+        reference_size = float(reference_size)
+    except (TypeError, ValueError):
+        resolved_scale["reference_size"] = reference_size
+        return resolved_scale, None, ["Bike metrics are pixel-only because reference_size is invalid."], None
+
+    resolved_scale["reference_size"] = reference_size
+    print(f"[SCALE] Normalized reference size: {reference_size} {reference_unit}")
+
+    image_path = image_path or resolve_media_file(image_name)
+    print(f"[SCALE] Resolved image path: {image_path}")
+    if not image_path or not image_path.exists():
+        return resolved_scale, None, [], f"Could not compute cm_per_px because image file was not found: {image_name}"
+
+    print(f"[SCALE] reference_object: {reference_object}")
+    print(f"[SCALE] reference_size: {reference_size}")
+    print(f"[SCALE] reference_unit: {reference_unit}")
+    print(f"[SCALE] Calling compute_conversion_factor with image_path={image_path}")
+    conversion_result = compute_conversion_factor(
+        [],
+        image_path,
+        reference_object,
+        reference_size,
+        reference_unit
+    )
+    cm_per_px, diameters_px = conversion_result[:2]
+    scale_selection_metadata = conversion_result[2] if len(conversion_result) > 2 else {}
+    print(f"[SCALE] Detected wheel diameters px: {diameters_px}")
+    if scale_selection_metadata:
+        print(f"[SCALE] Detected wheel candidates: {scale_selection_metadata.get('detected_wheel_candidates')}")
+        print(f"[SCALE] Selected wheel label: {scale_selection_metadata.get('selected_wheel_label')}")
+        print(f"[SCALE] Selected wheel diameter px: {scale_selection_metadata.get('selected_wheel_diameter_px')}")
+        print(f"[SCALE] Selection reason: {scale_selection_metadata.get('scale_selection_reason')}")
+    print(f"[SCALE] Computed cm_per_px: {cm_per_px}")
+
+    if not cm_per_px:
+        return resolved_scale, None, [], f"Could not compute cm_per_px from {reference_object} reference."
+
+    resolved_scale["cm_per_px"] = cm_per_px
+    resolved_scale.update(scale_selection_metadata)
+    return resolved_scale, cm_per_px, [], None
+
+
+def layers_path_for_image(image_name):
+    safe_name = Path(str(image_name).replace("\\", "/")).name
+    return MEDIA_DIR / f"{Path(safe_name).stem}_layers.json"
+
+
+def recompute_bike_geometry_metrics(image_name, bike_landmarks=None, scale_reference=None, landmark_source=None, request_payload=None):
+    landmark_path = resolve_landmark_source_file(landmark_source)
+    landmarks_payload = {}
+    matched_by = None
+    if landmark_path:
+        landmarks_payload = load_json_payload(landmark_path)
+        matched_by = "landmark_source"
+        print(f"[BIKE LANDMARK] Selected landmark file from source: {landmark_path}")
+    else:
+        landmark_path, landmarks_payload, matched_by = find_bike_landmark_record(image_name)
+
+    if not bike_landmarks:
+        bike_landmarks = landmarks_payload.get("bike_landmarks", {}) if landmarks_payload else {}
+
+    if not bike_landmarks:
+        return {
+            "ok": False,
+            "status_code": 404,
+            "error": "No bike landmarks found. Add or load bike landmarks first.",
+            "image": image_name,
+            "metrics": {}
+        }
+
+    request_scale = normalize_scale_reference(parse_scale_reference_payload(scale_reference))
+    saved_scale = landmarks_payload.get("scale_reference") if landmarks_payload else None
+    merged_scale = merge_scale_reference(request_scale, saved_scale)
+    print(f"[SCALE] Received scale_reference: {request_scale}")
+    print(f"[SCALE] Using scale_reference: {merged_scale}")
+
+    image_path, checked_paths = resolve_existing_image_path_for_scale(
+        image_name,
+        selected_landmark_path=landmark_path,
+        request_payload=request_payload
+    )
+    if not image_path:
+        return {
+            "ok": False,
+            "status_code": 422,
+            "error": "Could not resolve an existing image path for scale calculation.",
+            "image": image_name,
+            "checked_paths": checked_paths,
+            "scale_reference": merged_scale,
+            "metrics": {}
+        }
+
+    resolved_scale, cm_per_px, warnings, scale_error = resolve_scale_reference_for_bike_metrics(
+        image_name,
+        merged_scale,
+        image_path
+    )
+    if scale_error:
+        return {
+            "ok": False,
+            "status_code": 422,
+            "error": scale_error,
+            "image": image_name,
+            "scale_reference": resolved_scale,
+            "checked_paths": checked_paths,
+            "metrics": {}
+        }
+
+    bike_metrics = calculate_bike_landmark_metrics(bike_landmarks, cm_per_px)
+    print(f"[BIKE GEOMETRY] Metrics are {'real-world' if cm_per_px else 'pixel-only'}")
+    print(f"[BIKE GEOMETRY] Computed metrics: {bike_metrics}")
+
+    metrics = {}
+    if bike_metrics["distances"] or bike_metrics["angles"]:
+        metrics["bike_landmarks"] = bike_metrics
+
+    if landmark_path:
+        landmarks_payload["bike_landmarks"] = bike_landmarks
+        landmarks_payload["scale_reference"] = resolved_scale
+        landmarks_payload["saved_at"] = utc_timestamp()
+        print(f"[SCALE] Saving scale_reference to: {landmark_path} {resolved_scale}")
+        with open(landmark_path, "w", encoding="utf-8") as f:
+            json.dump(landmarks_payload, f, indent=2)
+
+    layers_path = layers_path_for_image(image_name)
+    if layers_path.exists():
+        layers_data = load_json_payload(layers_path)
+    else:
+        layers_data = {"keypoints": [], "labels": [], "metrics": {}}
+
+    all_metrics = layers_data.setdefault("metrics", {})
+    all_metrics["bike_landmarks"] = bike_metrics
+    keypoints = layers_data.get("keypoints") or []
+    visible = layers_data.get("visible") or []
+    if keypoints and visible:
+        append_kops_metric(all_metrics, keypoints, visible, bike_landmarks, cm_per_px)
+    layers_data["cm_per_px"] = cm_per_px
+    layers_data["scale_reference"] = resolved_scale
+    print(f"[BIKE GEOMETRY] Output layer JSON path updated: {layers_path}")
+    with open(layers_path, "w", encoding="utf-8") as f:
+        json.dump(layers_data, f, indent=2)
+
+    return {
+        "ok": True,
+        "image": image_name,
+        "filename": image_name,
+        "landmark_source": landmark_source_name(landmark_path) if landmark_path else None,
+        "matched_by": matched_by,
+        "scale_reference": resolved_scale,
+        "metrics": metrics,
+        "bike_landmark_metrics": bike_metrics,
+        "warnings": warnings
+    }
 
 
 def no_person_pose_response(filename=None, pose_quality=None):
@@ -1061,13 +1470,15 @@ async def annotate_file(
         print(f"/annotate: calling compute_conversion_factor(...reference_object={reference_object}, "
               f"reference_size={reference_size}, reference_unit={reference_unit})")
 
-        cm_per_px, diameters_px = compute_conversion_factor(
+        conversion_result = compute_conversion_factor(
             keypoints,
             input_path,
             reference_object,
             reference_size,
             reference_unit
         )
+        cm_per_px, diameters_px = conversion_result[:2]
+        scale_selection_metadata = conversion_result[2] if len(conversion_result) > 2 else {}
 
         print(f"/annotate: AFTER compute_conversion_factor(...cm_per_px={cm_per_px}, "
               f"diameters_px={diameters_px})")
@@ -1081,6 +1492,8 @@ async def annotate_file(
             "wheel_preset": wheel_preset or request_scale_reference.get("wheel_preset"),
             "wheel_preset_label": wheel_preset_label or request_scale_reference.get("wheel_preset_label"),
         }, cm_per_px)
+        if scale_reference_payload and scale_selection_metadata:
+            scale_reference_payload.update(scale_selection_metadata)
         print(f"[SCALE] Using scale_reference: {scale_reference_payload}")
 
         all_labels = []
@@ -1253,13 +1666,15 @@ async def annotate_file(
         print(f"/annotate: calling compute_conversion_factor(...reference_object={reference_object}, "
               f"reference_size={reference_size}, reference_unit={reference_unit})")
         # calc for converting px to in/cm
-        cm_per_px, diameters_px = compute_conversion_factor(
+        conversion_result = compute_conversion_factor(
             keypoints,
             input_path,
             reference_object,
             reference_size,
             reference_unit
         )
+        cm_per_px, diameters_px = conversion_result[:2]
+        scale_selection_metadata = conversion_result[2] if len(conversion_result) > 2 else {}
         print(f"/annotate: AFTER compute_conversion_factor(...cm_per_px={cm_per_px}, "
               f"diameters_px={diameters_px})")
 
@@ -1444,37 +1859,7 @@ async def analyze_overlay(layer: str = Query(...), filename: str = Query(...)):
 
 @app.get("/bike-landmarks")
 async def get_bike_landmarks(image: str = Query(...)):
-    safe_filename = Path(image).name
-    stem = Path(safe_filename).stem
-    exact_path = MEDIA_DIR / f"{stem}_bike_landmarks.json"
-    dataset_labels_dir = MEDIA_DIR / "bike_landmark_annotations" / "labels"
-
-    print(f"[BIKE LANDMARK] Exact lookup path: {exact_path}")
-
-    processed_candidates = []
-    dataset_candidates = []
-    landmarks_path = None
-    matched_by = None
-
-    if exact_path.exists():
-        landmarks_path = exact_path
-        matched_by = "exact"
-    else:
-        processed_candidates = list(MEDIA_DIR.glob(f"{stem}_*_bike_landmarks.json"))
-        if dataset_labels_dir.exists():
-            dataset_candidates = list(dataset_labels_dir.glob(f"{stem}_*_bike_landmarks.json"))
-        fallback_candidates = processed_candidates + dataset_candidates
-        if fallback_candidates:
-            landmarks_path = max(fallback_candidates, key=landmark_candidate_sort_key)
-            matched_by = (
-                "landmark_dataset_fallback"
-                if dataset_labels_dir in landmarks_path.parents
-                else "processed_uuid_fallback"
-            )
-
-    print(f"[BIKE LANDMARK] Processed fallback candidates: {[p.name for p in processed_candidates]}")
-    print(f"[BIKE LANDMARK] Dataset fallback candidates: {[p.name for p in dataset_candidates]}")
-
+    landmarks_path, payload, matched_by = find_bike_landmark_record(image)
     if not landmarks_path:
         return {
             "found": False,
@@ -1483,13 +1868,6 @@ async def get_bike_landmarks(image: str = Query(...)):
             "bike_landmarks": {},
             "scale_reference": None
         }
-
-    print(f"[BIKE LANDMARK] Selected candidate: {landmarks_path.name}")
-    print(f"[BIKE LANDMARK] Loaded landmarks from: {landmarks_path}")
-
-    with open(landmarks_path, "r", encoding="utf-8") as f:
-        payload = json.load(f)
-    print(f"[SCALE] Loaded scale_reference from: {landmarks_path} {payload.get('scale_reference')}")
 
     return {
         "found": True,
@@ -1522,8 +1900,9 @@ async def save_bike_landmarks(request: Request):
 
     submitted_scale_reference = parse_scale_reference_payload(data.get("scale_reference"))
     print(f"[SCALE] Received scale_reference: {submitted_scale_reference}")
-    scale_reference = normalize_scale_reference(
-        submitted_scale_reference if submitted_scale_reference is not None else existing_payload.get("scale_reference")
+    scale_reference = merge_scale_reference_preserving_computed_metadata(
+        existing_payload.get("scale_reference"),
+        submitted_scale_reference
     )
 
     payload = {
@@ -1610,8 +1989,10 @@ async def save_bike_landmark_annotation(
 
     source_path = resolve_landmark_source_file(landmark_source)
     existing_payload = load_json_payload(source_path) if source_path else {}
-    parsed_scale_reference = normalize_scale_reference(
-        submitted_scale_reference if submitted_scale_reference is not None else existing_payload.get("scale_reference")
+    existing_scale_reference = existing_payload.get("scale_reference")
+    parsed_scale_reference = merge_scale_reference_preserving_computed_metadata(
+        existing_scale_reference,
+        submitted_scale_reference
     )
 
     if source_path:
@@ -1662,55 +2043,6 @@ async def save_bike_landmark_annotation(
     }
 
 
-@app.post("/recalculate-bike-metrics")
-async def recalculate_bike_metrics(request: Request):
-    data = await request.json()
-    image_filename = data.get("image_filename") or data.get("filename")
-    if not image_filename:
-        return JSONResponse(status_code=400, content={"error": "Missing image filename."})
-
-    safe_filename = Path(image_filename).name
-    stem = Path(safe_filename).stem
-    layers_path = MEDIA_DIR / f"{stem}_layers.json"
-    landmarks_path = MEDIA_DIR / f"{stem}_bike_landmarks.json"
-
-    if not layers_path.exists():
-        return JSONResponse(status_code=404, content={"error": "Layers file not found."})
-    if not landmarks_path.exists():
-        return JSONResponse(status_code=404, content={"error": "Bike landmarks file not found."})
-
-    with open(layers_path, "r", encoding="utf-8") as f:
-        layers_data = json.load(f)
-
-    with open(landmarks_path, "r", encoding="utf-8") as f:
-        landmarks_data = json.load(f)
-
-    all_metrics = layers_data.setdefault("metrics", {})
-    cm_per_px = data.get("cm_per_px") or layers_data.get("cm_per_px") or infer_cm_per_px_from_metrics(all_metrics)
-    bike_landmarks = landmarks_data.get("bike_landmarks", {})
-    scale_reference = landmarks_data.get("scale_reference") or layers_data.get("scale_reference")
-    bike_metrics = append_bike_landmark_metrics(all_metrics, bike_landmarks, cm_per_px)
-    print(f"[BIKE LANDMARK] Computed bike landmark metrics: {bike_metrics}")
-    keypoints = layers_data.get("keypoints") or []
-    visible = layers_data.get("visible") or []
-    if keypoints and visible:
-        append_kops_metric(all_metrics, keypoints, visible, bike_landmarks, cm_per_px)
-    if scale_reference:
-        layers_data["scale_reference"] = normalize_scale_reference(scale_reference, cm_per_px)
-        print(f"[SCALE] Saving scale_reference to: {layers_path} {layers_data['scale_reference']}")
-
-    with open(layers_path, "w", encoding="utf-8") as f:
-        json.dump(layers_data, f, indent=2)
-
-    return {
-        "message": "Bike landmark metrics recalculated.",
-        "filename": safe_filename,
-        "metrics": all_metrics,
-        "bike_landmark_metrics": bike_metrics,
-        "scale_reference": layers_data.get("scale_reference")
-    }
-
-
 @app.post("/analyze-bike-geometry")
 async def analyze_bike_geometry(request: Request):
     print("[BIKE GEOMETRY] Starting bike-only analysis")
@@ -1720,83 +2052,19 @@ async def analyze_bike_geometry(request: Request):
     if not image_filename:
         return JSONResponse(status_code=400, content={"error": "Missing image filename."})
 
-    image_path = resolve_media_file(image_filename)
     safe_filename = Path(str(image_filename).replace("\\", "/")).as_posix()
-    stem = Path(safe_filename).stem
-
-    bike_landmarks = data.get("bike_landmarks") or {}
-    if not bike_landmarks:
-        bike_landmarks, _ = load_bike_landmarks_for_filename(safe_filename)
-
-    print(f"[BIKE GEOMETRY] Loaded landmarks: {bike_landmarks}")
-
-    if not bike_landmarks:
-        return {
-            "message": "No bike landmarks found. Add or load bike landmarks first.",
-            "metrics": {}
-        }
-
-    request_scale_reference = parse_scale_reference_payload(data.get("scale_reference")) or {}
-    print(f"[SCALE] Received scale_reference: {request_scale_reference}")
-    reference_object = request_scale_reference.get("reference_object") or data.get("reference_object")
-    reference_size = request_scale_reference.get("reference_size") or data.get("reference_size")
-    reference_unit = request_scale_reference.get("reference_unit") or data.get("reference_unit")
-    wheel_preset = request_scale_reference.get("wheel_preset") or data.get("wheel_preset")
-    wheel_preset_label = request_scale_reference.get("wheel_preset_label") or data.get("wheel_preset_label")
-    cm_per_px = None
-
-    if image_path and image_path.exists() and reference_object and reference_size and reference_unit:
-        try:
-            cm_per_px, _ = compute_conversion_factor(
-                [],
-                image_path,
-                reference_object,
-                float(reference_size),
-                reference_unit
-            )
-        except Exception as e:
-            print(f"[BIKE GEOMETRY] Scale calculation skipped: {e}")
-
-    print(f"[BIKE GEOMETRY] cm_per_px: {cm_per_px}")
-    scale_reference = build_scale_reference(reference_object, reference_size, reference_unit, cm_per_px, wheel_preset, wheel_preset_label)
-    print(f"[SCALE] Using scale_reference: {scale_reference}")
-
-    bike_metrics = calculate_bike_landmark_metrics(bike_landmarks, cm_per_px)
-    print(f"[BIKE GEOMETRY] Computed metrics: {bike_metrics}")
-
-    metrics = {}
-    if bike_metrics["distances"] or bike_metrics["angles"]:
-        metrics["bike_landmarks"] = bike_metrics
-
-    layers_path = MEDIA_DIR / f"{stem}_layers.json"
-    if layers_path.exists():
-        with open(layers_path, "r", encoding="utf-8") as f:
-            layers_data = json.load(f)
-    else:
-        layers_data = {
-            "keypoints": [],
-            "labels": [],
-            "metrics": {}
-        }
-
-    layers_data.setdefault("keypoints", [])
-    layers_data.setdefault("labels", [])
-    layers_data.setdefault("metrics", {})
-    layers_data["cm_per_px"] = cm_per_px
-    layers_data["scale_reference"] = scale_reference
-    layers_data["metrics"]["bike_landmarks"] = bike_metrics
-
-    with open(layers_path, "w", encoding="utf-8") as f:
-        print(f"[SCALE] Saving scale_reference to: {layers_path} {scale_reference}")
-        json.dump(layers_data, f, indent=2)
-
-    return {
-        "message": "Bike geometry analysis complete",
-        "pose_detected": False,
-        "metrics": metrics,
-        "filename": safe_filename,
-        "scale_reference": scale_reference
-    }
+    result = recompute_bike_geometry_metrics(
+        safe_filename,
+        bike_landmarks=data.get("bike_landmarks"),
+        scale_reference=data.get("scale_reference"),
+        landmark_source=data.get("landmark_source"),
+        request_payload=data
+    )
+    if not result.get("ok"):
+        return JSONResponse(status_code=result.get("status_code", 400), content=result)
+    result["message"] = "Bike geometry analysis complete"
+    result["pose_detected"] = False
+    return result
 
 
 if __name__ == "__main__":

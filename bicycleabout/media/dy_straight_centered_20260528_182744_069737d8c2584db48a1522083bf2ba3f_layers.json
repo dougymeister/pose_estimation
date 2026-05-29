@@ -1,0 +1,1507 @@
+{
+  "keypoints": [
+    [
+      619.6197509765625,
+      140.6697235107422
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      614.2945556640625,
+      122.6411361694336
+    ],
+    [
+      0.0,
+      0.0
+    ],
+    [
+      566.4928588867188,
+      111.23814392089844
+    ],
+    [
+      527.9535522460938,
+      195.56552124023438
+    ],
+    [
+      511.7637023925781,
+      162.3791961669922
+    ],
+    [
+      591.8820190429688,
+      296.0874328613281
+    ],
+    [
+      560.79443359375,
+      286.9844665527344
+    ],
+    [
+      682.7018432617188,
+      361.0809326171875
+    ],
+    [
+      685.7586669921875,
+      352.4195556640625
+    ],
+    [
+      434.52410888671875,
+      416.1509094238281
+    ],
+    [
+      435.03533935546875,
+      401.7409973144531
+    ],
+    [
+      510.0323486328125,
+      556.2299194335938
+    ],
+    [
+      592.546142578125,
+      492.5964050292969
+    ],
+    [
+      444.0393371582031,
+      724.4051513671875
+    ],
+    [
+      572.5315551757812,
+      688.2969970703125
+    ]
+  ],
+  "visible": [
+    0.9616297483444214,
+    0.3142169713973999,
+    0.9820693731307983,
+    0.027820084244012833,
+    0.9861086010932922,
+    0.9497262239456177,
+    0.997026264667511,
+    0.7472179532051086,
+    0.9961191415786743,
+    0.8245759010314941,
+    0.9953108429908752,
+    0.9960349202156067,
+    0.9988338351249695,
+    0.9966238737106323,
+    0.9991069436073303,
+    0.9857378005981445,
+    0.9932970404624939
+  ],
+  "labels": [
+    {
+      "points": [
+        11,
+        13,
+        15
+      ],
+      "angle_deg": 130.248188256886,
+      "label": "130\u00b0",
+      "midpoint": [
+        439,
+        570
+      ],
+      "line_segments": [],
+      "key": "knee_angle_left_11_13_15",
+      "layer": "knee_angle"
+    },
+    {
+      "points": [
+        12,
+        14,
+        16
+      ],
+      "angle_deg": 114.13779420703754,
+      "label": "114\u00b0",
+      "midpoint": [
+        503,
+        545
+      ],
+      "line_segments": [],
+      "key": "knee_angle_right_12_14_16",
+      "layer": "knee_angle"
+    },
+    {
+      "points": [
+        5,
+        11,
+        13
+      ],
+      "angle_deg": 128.71834345370263,
+      "label": "128\u00b0",
+      "midpoint": [
+        518,
+        375
+      ],
+      "line_segments": [],
+      "key": "hip_angle_left_5_11_13",
+      "layer": "hip_angle"
+    },
+    {
+      "points": [
+        6,
+        12,
+        14
+      ],
+      "angle_deg": 102.20375916063014,
+      "label": "102\u00b0",
+      "midpoint": [
+        552,
+        327
+      ],
+      "line_segments": [],
+      "key": "hip_angle_right_6_12_14",
+      "layer": "hip_angle"
+    },
+    {
+      "points": [
+        11,
+        5,
+        7
+      ],
+      "angle_deg": 55.410149854880025,
+      "label": "55\u00b0",
+      "midpoint": [
+        513,
+        356
+      ],
+      "line_segments": [],
+      "key": "shoulder_angle_left_11_5_7",
+      "layer": "shoulder_angle"
+    },
+    {
+      "points": [
+        12,
+        6,
+        8
+      ],
+      "angle_deg": 39.252519398548436,
+      "label": "39\u00b0",
+      "midpoint": [
+        497,
+        344
+      ],
+      "line_segments": [],
+      "key": "shoulder_angle_right_12_6_8",
+      "layer": "shoulder_angle"
+    },
+    {
+      "points": [
+        5,
+        9
+      ],
+      "distance_px": 226.5885808586536,
+      "distance_cm": 49.674085215380074,
+      "distance_in": 19.55672646274806,
+      "label": "49.7 cm",
+      "label_px": "226 px",
+      "label_cm": "49.7 cm",
+      "label_in": "19.56 in",
+      "midpoint": [
+        605.3276977539062,
+        278.32322692871094
+      ],
+      "line_segments": [
+        [
+          527.9535522460938,
+          195.56552124023438,
+          682.7018432617188,
+          361.0809326171875
+        ]
+      ],
+      "style": "solid",
+      "color": "#FFA500",
+      "thickness": 3,
+      "key": "arm_reach_distance_left_5_9",
+      "layer": "arm_reach_distance"
+    },
+    {
+      "points": [
+        5,
+        9
+      ],
+      "type": "horizontal_reach",
+      "distance_px": 154.748291015625,
+      "distance_cm": 33.924833130226205,
+      "distance_in": 13.356233515837088,
+      "label": "33.9 cm",
+      "label_px": "154 px",
+      "label_cm": "33.9 cm",
+      "label_in": "13.36 in",
+      "midpoint": [
+        605.3276977539062,
+        185.56552124023438
+      ],
+      "line_segments": [
+        [
+          527.9535522460938,
+          195.56552124023438,
+          682.7018432617188,
+          195.56552124023438
+        ],
+        [
+          682.7018432617188,
+          361.0809326171875,
+          682.7018432617188,
+          195.56552124023438
+        ]
+      ],
+      "style": "dashed",
+      "color": "#1E90FF",
+      "thickness": 3,
+      "key": "arm_reach_distance_horizon_left_5_9",
+      "layer": "arm_reach_distance"
+    },
+    {
+      "points": [
+        6,
+        10
+      ],
+      "distance_px": 257.6617665541301,
+      "distance_cm": 56.48613226691833,
+      "distance_in": 22.23863475075525,
+      "label": "56.5 cm",
+      "label_px": "257 px",
+      "label_cm": "56.5 cm",
+      "label_in": "22.24 in",
+      "midpoint": [
+        598.7611846923828,
+        257.39937591552734
+      ],
+      "line_segments": [
+        [
+          511.7637023925781,
+          162.3791961669922,
+          685.7586669921875,
+          352.4195556640625
+        ]
+      ],
+      "style": "solid",
+      "color": "#FFA500",
+      "thickness": 3,
+      "key": "arm_reach_distance_right_6_10",
+      "layer": "arm_reach_distance"
+    },
+    {
+      "points": [
+        6,
+        10
+      ],
+      "type": "horizontal_reach",
+      "distance_px": 173.99496459960938,
+      "distance_cm": 38.14420243869033,
+      "distance_in": 15.017402534917451,
+      "label": "38.1 cm",
+      "label_px": "173 px",
+      "label_cm": "38.1 cm",
+      "label_in": "15.02 in",
+      "midpoint": [
+        598.7611846923828,
+        152.3791961669922
+      ],
+      "line_segments": [
+        [
+          511.7637023925781,
+          162.3791961669922,
+          685.7586669921875,
+          162.3791961669922
+        ],
+        [
+          685.7586669921875,
+          352.4195556640625,
+          685.7586669921875,
+          162.3791961669922
+        ]
+      ],
+      "style": "dashed",
+      "color": "#1E90FF",
+      "thickness": 3,
+      "key": "arm_reach_distance_horizon_right_6_10",
+      "layer": "arm_reach_distance"
+    },
+    {
+      "points": [
+        11,
+        15
+      ],
+      "distance_px": 308.4010655706844,
+      "distance_cm": 67.60950068012718,
+      "distance_in": 26.61791365359338,
+      "label": "67.6 cm",
+      "label_px": "308 px",
+      "label_cm": "67.6 cm",
+      "label_in": "26.62 in",
+      "midpoint": [
+        439.28172302246094,
+        570.2780303955078
+      ],
+      "line_segments": [
+        [
+          434.52410888671875,
+          416.1509094238281,
+          444.0393371582031,
+          724.4051513671875
+        ]
+      ],
+      "style": "solid",
+      "color": "#FFA500",
+      "thickness": 3,
+      "key": "leg_length_left_11_15",
+      "layer": "leg_length"
+    },
+    {
+      "points": [
+        12,
+        16
+      ],
+      "distance_px": 317.8357285784372,
+      "distance_cm": 69.67782315449698,
+      "distance_in": 27.43221384035314,
+      "label": "69.7 cm",
+      "label_px": "317 px",
+      "label_cm": "69.7 cm",
+      "label_in": "27.43 in",
+      "midpoint": [
+        503.783447265625,
+        545.0189971923828
+      ],
+      "line_segments": [
+        [
+          435.03533935546875,
+          401.7409973144531,
+          572.5315551757812,
+          688.2969970703125
+        ]
+      ],
+      "style": "solid",
+      "color": "#FFA500",
+      "thickness": 3,
+      "key": "leg_length_right_12_16",
+      "layer": "leg_length"
+    },
+    {
+      "points": [
+        13,
+        15
+      ],
+      "distance_px": 180.65986327739202,
+      "distance_cm": 39.60532083935048,
+      "distance_in": 15.592645999744285,
+      "label": "39.6 cm",
+      "label_px": "180 px",
+      "label_cm": "39.6 cm",
+      "label_in": "15.59 in",
+      "midpoint": [
+        477.0358428955078,
+        640.3175354003906
+      ],
+      "line_segments": [
+        [
+          510.0323486328125,
+          556.2299194335938,
+          444.0393371582031,
+          724.4051513671875
+        ]
+      ],
+      "style": "solid",
+      "color": "#FFA500",
+      "thickness": 3,
+      "key": "knee_length_left_13_15",
+      "layer": "knee_length"
+    },
+    {
+      "points": [
+        14,
+        16
+      ],
+      "distance_px": 196.72139038266806,
+      "distance_cm": 43.12642354935119,
+      "distance_in": 16.97890690919338,
+      "label": "43.1 cm",
+      "label_px": "196 px",
+      "label_cm": "43.1 cm",
+      "label_in": "16.98 in",
+      "midpoint": [
+        582.5388488769531,
+        590.4467010498047
+      ],
+      "line_segments": [
+        [
+          592.546142578125,
+          492.5964050292969,
+          572.5315551757812,
+          688.2969970703125
+        ]
+      ],
+      "style": "solid",
+      "color": "#FFA500",
+      "thickness": 3,
+      "key": "knee_length_right_14_16",
+      "layer": "knee_length"
+    },
+    {
+      "points": [
+        5,
+        7
+      ],
+      "distance_px": 119.12809736984022,
+      "distance_cm": 26.115964175559824,
+      "distance_in": 10.281875659669222,
+      "label": "26.1 cm",
+      "label_px": "119 px",
+      "label_cm": "26.1 cm",
+      "label_in": "10.28 in",
+      "midpoint": [
+        559.9177856445312,
+        245.82647705078125
+      ],
+      "line_segments": [
+        [
+          527.9535522460938,
+          195.56552124023438,
+          591.8820190429688,
+          296.0874328613281
+        ]
+      ],
+      "style": "solid",
+      "color": "#FFA500",
+      "thickness": 3,
+      "key": "reach_distance_left_5_7",
+      "layer": "reach_distance"
+    },
+    {
+      "points": [
+        6,
+        8
+      ],
+      "distance_px": 133.9047647024761,
+      "distance_cm": 29.355392347531822,
+      "distance_in": 11.557241081705442,
+      "label": "29.4 cm",
+      "label_px": "133 px",
+      "label_cm": "29.4 cm",
+      "label_in": "11.56 in",
+      "midpoint": [
+        536.2790679931641,
+        224.68183135986328
+      ],
+      "line_segments": [
+        [
+          511.7637023925781,
+          162.3791961669922,
+          560.79443359375,
+          286.9844665527344
+        ]
+      ],
+      "style": "solid",
+      "color": "#FFA500",
+      "thickness": 3,
+      "key": "reach_distance_right_6_8",
+      "layer": "reach_distance"
+    }
+  ],
+  "metrics": {
+    "knee_angle": {
+      "distances": [],
+      "angles": [
+        {
+          "points": [
+            11,
+            13,
+            15
+          ],
+          "angle_deg": 130.248188256886,
+          "label": "130\u00b0",
+          "midpoint": [
+            439,
+            570
+          ],
+          "line_segments": [],
+          "key": "knee_angle_left_11_13_15",
+          "layer": "knee_angle"
+        },
+        {
+          "points": [
+            12,
+            14,
+            16
+          ],
+          "angle_deg": 114.13779420703754,
+          "label": "114\u00b0",
+          "midpoint": [
+            503,
+            545
+          ],
+          "line_segments": [],
+          "key": "knee_angle_right_12_14_16",
+          "layer": "knee_angle"
+        }
+      ]
+    },
+    "hip_angle": {
+      "distances": [],
+      "angles": [
+        {
+          "points": [
+            5,
+            11,
+            13
+          ],
+          "angle_deg": 128.71834345370263,
+          "label": "128\u00b0",
+          "midpoint": [
+            518,
+            375
+          ],
+          "line_segments": [],
+          "key": "hip_angle_left_5_11_13",
+          "layer": "hip_angle"
+        },
+        {
+          "points": [
+            6,
+            12,
+            14
+          ],
+          "angle_deg": 102.20375916063014,
+          "label": "102\u00b0",
+          "midpoint": [
+            552,
+            327
+          ],
+          "line_segments": [],
+          "key": "hip_angle_right_6_12_14",
+          "layer": "hip_angle"
+        }
+      ]
+    },
+    "shoulder_angle": {
+      "distances": [],
+      "angles": [
+        {
+          "points": [
+            11,
+            5,
+            7
+          ],
+          "angle_deg": 55.410149854880025,
+          "label": "55\u00b0",
+          "midpoint": [
+            513,
+            356
+          ],
+          "line_segments": [],
+          "key": "shoulder_angle_left_11_5_7",
+          "layer": "shoulder_angle"
+        },
+        {
+          "points": [
+            12,
+            6,
+            8
+          ],
+          "angle_deg": 39.252519398548436,
+          "label": "39\u00b0",
+          "midpoint": [
+            497,
+            344
+          ],
+          "line_segments": [],
+          "key": "shoulder_angle_right_12_6_8",
+          "layer": "shoulder_angle"
+        }
+      ]
+    },
+    "arm_reach_distance": {
+      "distances": [
+        {
+          "points": [
+            5,
+            9
+          ],
+          "distance_px": 226.5885808586536,
+          "distance_cm": 49.674085215380074,
+          "distance_in": 19.55672646274806,
+          "label": "49.7 cm",
+          "label_px": "226 px",
+          "label_cm": "49.7 cm",
+          "label_in": "19.56 in",
+          "midpoint": [
+            605.3276977539062,
+            278.32322692871094
+          ],
+          "line_segments": [
+            [
+              527.9535522460938,
+              195.56552124023438,
+              682.7018432617188,
+              361.0809326171875
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "arm_reach_distance_left_5_9",
+          "layer": "arm_reach_distance"
+        },
+        {
+          "points": [
+            5,
+            9
+          ],
+          "type": "horizontal_reach",
+          "distance_px": 154.748291015625,
+          "distance_cm": 33.924833130226205,
+          "distance_in": 13.356233515837088,
+          "label": "33.9 cm",
+          "label_px": "154 px",
+          "label_cm": "33.9 cm",
+          "label_in": "13.36 in",
+          "midpoint": [
+            605.3276977539062,
+            185.56552124023438
+          ],
+          "line_segments": [
+            [
+              527.9535522460938,
+              195.56552124023438,
+              682.7018432617188,
+              195.56552124023438
+            ],
+            [
+              682.7018432617188,
+              361.0809326171875,
+              682.7018432617188,
+              195.56552124023438
+            ]
+          ],
+          "style": "dashed",
+          "color": "#1E90FF",
+          "thickness": 3,
+          "key": "arm_reach_distance_horizon_left_5_9",
+          "layer": "arm_reach_distance"
+        },
+        {
+          "points": [
+            6,
+            10
+          ],
+          "distance_px": 257.6617665541301,
+          "distance_cm": 56.48613226691833,
+          "distance_in": 22.23863475075525,
+          "label": "56.5 cm",
+          "label_px": "257 px",
+          "label_cm": "56.5 cm",
+          "label_in": "22.24 in",
+          "midpoint": [
+            598.7611846923828,
+            257.39937591552734
+          ],
+          "line_segments": [
+            [
+              511.7637023925781,
+              162.3791961669922,
+              685.7586669921875,
+              352.4195556640625
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "arm_reach_distance_right_6_10",
+          "layer": "arm_reach_distance"
+        },
+        {
+          "points": [
+            6,
+            10
+          ],
+          "type": "horizontal_reach",
+          "distance_px": 173.99496459960938,
+          "distance_cm": 38.14420243869033,
+          "distance_in": 15.017402534917451,
+          "label": "38.1 cm",
+          "label_px": "173 px",
+          "label_cm": "38.1 cm",
+          "label_in": "15.02 in",
+          "midpoint": [
+            598.7611846923828,
+            152.3791961669922
+          ],
+          "line_segments": [
+            [
+              511.7637023925781,
+              162.3791961669922,
+              685.7586669921875,
+              162.3791961669922
+            ],
+            [
+              685.7586669921875,
+              352.4195556640625,
+              685.7586669921875,
+              162.3791961669922
+            ]
+          ],
+          "style": "dashed",
+          "color": "#1E90FF",
+          "thickness": 3,
+          "key": "arm_reach_distance_horizon_right_6_10",
+          "layer": "arm_reach_distance"
+        }
+      ],
+      "angles": []
+    },
+    "arm_reach_distance_left": {
+      "distances": [
+        {
+          "points": [
+            5,
+            9
+          ],
+          "distance_px": 226.5885808586536,
+          "distance_cm": 49.674085215380074,
+          "distance_in": 19.55672646274806,
+          "label": "49.7 cm",
+          "label_px": "226 px",
+          "label_cm": "49.7 cm",
+          "label_in": "19.56 in",
+          "midpoint": [
+            605.3276977539062,
+            278.32322692871094
+          ],
+          "line_segments": [
+            [
+              527.9535522460938,
+              195.56552124023438,
+              682.7018432617188,
+              361.0809326171875
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "arm_reach_distance_left_5_9"
+        }
+      ],
+      "angles": []
+    },
+    "arm_reach_distance_right": {
+      "distances": [
+        {
+          "points": [
+            6,
+            10
+          ],
+          "distance_px": 257.6617665541301,
+          "distance_cm": 56.48613226691833,
+          "distance_in": 22.23863475075525,
+          "label": "56.5 cm",
+          "label_px": "257 px",
+          "label_cm": "56.5 cm",
+          "label_in": "22.24 in",
+          "midpoint": [
+            598.7611846923828,
+            257.39937591552734
+          ],
+          "line_segments": [
+            [
+              511.7637023925781,
+              162.3791961669922,
+              685.7586669921875,
+              352.4195556640625
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "arm_reach_distance_right_6_10"
+        }
+      ],
+      "angles": []
+    },
+    "leg_length": {
+      "distances": [
+        {
+          "points": [
+            11,
+            15
+          ],
+          "distance_px": 308.4010655706844,
+          "distance_cm": 67.60950068012718,
+          "distance_in": 26.61791365359338,
+          "label": "67.6 cm",
+          "label_px": "308 px",
+          "label_cm": "67.6 cm",
+          "label_in": "26.62 in",
+          "midpoint": [
+            439.28172302246094,
+            570.2780303955078
+          ],
+          "line_segments": [
+            [
+              434.52410888671875,
+              416.1509094238281,
+              444.0393371582031,
+              724.4051513671875
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "leg_length_left_11_15",
+          "layer": "leg_length"
+        },
+        {
+          "points": [
+            12,
+            16
+          ],
+          "distance_px": 317.8357285784372,
+          "distance_cm": 69.67782315449698,
+          "distance_in": 27.43221384035314,
+          "label": "69.7 cm",
+          "label_px": "317 px",
+          "label_cm": "69.7 cm",
+          "label_in": "27.43 in",
+          "midpoint": [
+            503.783447265625,
+            545.0189971923828
+          ],
+          "line_segments": [
+            [
+              435.03533935546875,
+              401.7409973144531,
+              572.5315551757812,
+              688.2969970703125
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "leg_length_right_12_16",
+          "layer": "leg_length"
+        }
+      ],
+      "angles": []
+    },
+    "leg_length_left": {
+      "distances": [
+        {
+          "points": [
+            11,
+            15
+          ],
+          "distance_px": 308.4010655706844,
+          "distance_cm": 67.60950068012718,
+          "distance_in": 26.61791365359338,
+          "label": "67.6 cm",
+          "label_px": "308 px",
+          "label_cm": "67.6 cm",
+          "label_in": "26.62 in",
+          "midpoint": [
+            439.28172302246094,
+            570.2780303955078
+          ],
+          "line_segments": [
+            [
+              434.52410888671875,
+              416.1509094238281,
+              444.0393371582031,
+              724.4051513671875
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "leg_length_left_11_15"
+        }
+      ],
+      "angles": []
+    },
+    "leg_length_right": {
+      "distances": [
+        {
+          "points": [
+            12,
+            16
+          ],
+          "distance_px": 317.8357285784372,
+          "distance_cm": 69.67782315449698,
+          "distance_in": 27.43221384035314,
+          "label": "69.7 cm",
+          "label_px": "317 px",
+          "label_cm": "69.7 cm",
+          "label_in": "27.43 in",
+          "midpoint": [
+            503.783447265625,
+            545.0189971923828
+          ],
+          "line_segments": [
+            [
+              435.03533935546875,
+              401.7409973144531,
+              572.5315551757812,
+              688.2969970703125
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "leg_length_right_12_16"
+        }
+      ],
+      "angles": []
+    },
+    "knee_length": {
+      "distances": [
+        {
+          "points": [
+            13,
+            15
+          ],
+          "distance_px": 180.65986327739202,
+          "distance_cm": 39.60532083935048,
+          "distance_in": 15.592645999744285,
+          "label": "39.6 cm",
+          "label_px": "180 px",
+          "label_cm": "39.6 cm",
+          "label_in": "15.59 in",
+          "midpoint": [
+            477.0358428955078,
+            640.3175354003906
+          ],
+          "line_segments": [
+            [
+              510.0323486328125,
+              556.2299194335938,
+              444.0393371582031,
+              724.4051513671875
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "knee_length_left_13_15",
+          "layer": "knee_length"
+        },
+        {
+          "points": [
+            14,
+            16
+          ],
+          "distance_px": 196.72139038266806,
+          "distance_cm": 43.12642354935119,
+          "distance_in": 16.97890690919338,
+          "label": "43.1 cm",
+          "label_px": "196 px",
+          "label_cm": "43.1 cm",
+          "label_in": "16.98 in",
+          "midpoint": [
+            582.5388488769531,
+            590.4467010498047
+          ],
+          "line_segments": [
+            [
+              592.546142578125,
+              492.5964050292969,
+              572.5315551757812,
+              688.2969970703125
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "knee_length_right_14_16",
+          "layer": "knee_length"
+        }
+      ],
+      "angles": []
+    },
+    "knee_length_left": {
+      "distances": [
+        {
+          "points": [
+            13,
+            15
+          ],
+          "distance_px": 180.65986327739202,
+          "distance_cm": 39.60532083935048,
+          "distance_in": 15.592645999744285,
+          "label": "39.6 cm",
+          "label_px": "180 px",
+          "label_cm": "39.6 cm",
+          "label_in": "15.59 in",
+          "midpoint": [
+            477.0358428955078,
+            640.3175354003906
+          ],
+          "line_segments": [
+            [
+              510.0323486328125,
+              556.2299194335938,
+              444.0393371582031,
+              724.4051513671875
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "knee_length_left_13_15"
+        }
+      ],
+      "angles": []
+    },
+    "knee_length_right": {
+      "distances": [
+        {
+          "points": [
+            14,
+            16
+          ],
+          "distance_px": 196.72139038266806,
+          "distance_cm": 43.12642354935119,
+          "distance_in": 16.97890690919338,
+          "label": "43.1 cm",
+          "label_px": "196 px",
+          "label_cm": "43.1 cm",
+          "label_in": "16.98 in",
+          "midpoint": [
+            582.5388488769531,
+            590.4467010498047
+          ],
+          "line_segments": [
+            [
+              592.546142578125,
+              492.5964050292969,
+              572.5315551757812,
+              688.2969970703125
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "knee_length_right_14_16"
+        }
+      ],
+      "angles": []
+    },
+    "reach_distance": {
+      "distances": [
+        {
+          "points": [
+            5,
+            7
+          ],
+          "distance_px": 119.12809736984022,
+          "distance_cm": 26.115964175559824,
+          "distance_in": 10.281875659669222,
+          "label": "26.1 cm",
+          "label_px": "119 px",
+          "label_cm": "26.1 cm",
+          "label_in": "10.28 in",
+          "midpoint": [
+            559.9177856445312,
+            245.82647705078125
+          ],
+          "line_segments": [
+            [
+              527.9535522460938,
+              195.56552124023438,
+              591.8820190429688,
+              296.0874328613281
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "reach_distance_left_5_7",
+          "layer": "reach_distance"
+        },
+        {
+          "points": [
+            6,
+            8
+          ],
+          "distance_px": 133.9047647024761,
+          "distance_cm": 29.355392347531822,
+          "distance_in": 11.557241081705442,
+          "label": "29.4 cm",
+          "label_px": "133 px",
+          "label_cm": "29.4 cm",
+          "label_in": "11.56 in",
+          "midpoint": [
+            536.2790679931641,
+            224.68183135986328
+          ],
+          "line_segments": [
+            [
+              511.7637023925781,
+              162.3791961669922,
+              560.79443359375,
+              286.9844665527344
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "reach_distance_right_6_8",
+          "layer": "reach_distance"
+        }
+      ],
+      "angles": []
+    },
+    "reach_distance_left": {
+      "distances": [
+        {
+          "points": [
+            5,
+            7
+          ],
+          "distance_px": 119.12809736984022,
+          "distance_cm": 26.115964175559824,
+          "distance_in": 10.281875659669222,
+          "label": "26.1 cm",
+          "label_px": "119 px",
+          "label_cm": "26.1 cm",
+          "label_in": "10.28 in",
+          "midpoint": [
+            559.9177856445312,
+            245.82647705078125
+          ],
+          "line_segments": [
+            [
+              527.9535522460938,
+              195.56552124023438,
+              591.8820190429688,
+              296.0874328613281
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "reach_distance_left_5_7"
+        }
+      ],
+      "angles": []
+    },
+    "reach_distance_right": {
+      "distances": [
+        {
+          "points": [
+            6,
+            8
+          ],
+          "distance_px": 133.9047647024761,
+          "distance_cm": 29.355392347531822,
+          "distance_in": 11.557241081705442,
+          "label": "29.4 cm",
+          "label_px": "133 px",
+          "label_cm": "29.4 cm",
+          "label_in": "11.56 in",
+          "midpoint": [
+            536.2790679931641,
+            224.68183135986328
+          ],
+          "line_segments": [
+            [
+              511.7637023925781,
+              162.3791961669922,
+              560.79443359375,
+              286.9844665527344
+            ]
+          ],
+          "style": "solid",
+          "color": "#FFA500",
+          "thickness": 3,
+          "key": "reach_distance_right_6_8"
+        }
+      ],
+      "angles": []
+    },
+    "bike_landmarks": {
+      "distances": [
+        {
+          "key": "bike_saddle_to_bar_distance",
+          "name": "bike_saddle_to_bar_distance",
+          "layer": "bike_landmarks",
+          "type": "straight",
+          "points": [
+            "saddle_center",
+            "handlebar_center"
+          ],
+          "landmark_points": [
+            "saddle_center",
+            "handlebar_center"
+          ],
+          "distance_px": 304.8212591011329,
+          "distance_cm": 66.82471439059216,
+          "distance_in": 26.30894267346148,
+          "label": "66.8 cm",
+          "label_px": "304 px",
+          "label_cm": "66.8 cm",
+          "label_in": "26.31 in",
+          "midpoint": [
+            572.0,
+            438.0
+          ],
+          "line_segments": [
+            [
+              422.0,
+              465.0,
+              722.0,
+              411.0
+            ]
+          ],
+          "style": "solid",
+          "color": "#00d4ff",
+          "thickness": 3
+        },
+        {
+          "key": "bike_saddle_to_bar_horizontal_reach",
+          "name": "bike_saddle_to_bar_horizontal_reach",
+          "layer": "bike_landmarks",
+          "type": "horizontal",
+          "points": [
+            "saddle_center",
+            "handlebar_center"
+          ],
+          "landmark_points": [
+            "saddle_center",
+            "handlebar_center"
+          ],
+          "distance_px": 300.0,
+          "distance_cm": 65.76776953252582,
+          "distance_in": 25.892822650600717,
+          "label": "65.8 cm",
+          "label_px": "300 px",
+          "label_cm": "65.8 cm",
+          "label_in": "25.89 in",
+          "midpoint": [
+            572.0,
+            465.0
+          ],
+          "line_segments": [
+            [
+              422.0,
+              465.0,
+              722.0,
+              465.0
+            ]
+          ],
+          "style": "dashed",
+          "color": "#00d4ff",
+          "thickness": 3
+        },
+        {
+          "key": "bike_saddle_to_bar_vertical_drop",
+          "name": "bike_saddle_to_bar_vertical_drop",
+          "layer": "bike_landmarks",
+          "type": "vertical",
+          "points": [
+            "saddle_center",
+            "handlebar_center"
+          ],
+          "landmark_points": [
+            "saddle_center",
+            "handlebar_center"
+          ],
+          "distance_px": 54.0,
+          "distance_cm": 11.838198515854648,
+          "distance_in": 4.660708077108129,
+          "label": "11.8 cm",
+          "label_px": "54 px",
+          "label_cm": "11.8 cm",
+          "label_in": "4.66 in",
+          "midpoint": [
+            722.0,
+            438.0
+          ],
+          "line_segments": [
+            [
+              722.0,
+              465.0,
+              722.0,
+              411.0
+            ]
+          ],
+          "style": "dashed",
+          "color": "#00d4ff",
+          "thickness": 3
+        },
+        {
+          "key": "bike_saddle_height",
+          "name": "bike_saddle_height",
+          "layer": "bike_landmarks",
+          "type": "straight",
+          "points": [
+            "bottom_bracket",
+            "saddle_center"
+          ],
+          "landmark_points": [
+            "bottom_bracket",
+            "saddle_center"
+          ],
+          "distance_px": 290.1465147128257,
+          "distance_cm": 63.607630367662445,
+          "distance_in": 25.042374160497026,
+          "label": "63.6 cm",
+          "label_px": "290 px",
+          "label_cm": "63.6 cm",
+          "label_in": "25.04 in",
+          "midpoint": [
+            472.5,
+            601.0
+          ],
+          "line_segments": [
+            [
+              523.0,
+              737.0,
+              422.0,
+              465.0
+            ]
+          ],
+          "style": "solid",
+          "color": "#00d4ff",
+          "thickness": 3
+        },
+        {
+          "key": "bike_wheelbase",
+          "name": "bike_wheelbase",
+          "layer": "bike_landmarks",
+          "type": "straight",
+          "points": [
+            "rear_axle",
+            "front_axle"
+          ],
+          "landmark_points": [
+            "rear_axle",
+            "front_axle"
+          ],
+          "distance_px": 517.2542894940553,
+          "distance_cm": 113.39553633718475,
+          "distance_in": 44.643911943773524,
+          "label": "113.4 cm",
+          "label_px": "517 px",
+          "label_cm": "113.4 cm",
+          "label_in": "44.64 in",
+          "midpoint": [
+            574.0,
+            713.0
+          ],
+          "line_segments": [
+            [
+              316.0,
+              731.0,
+              832.0,
+              695.0
+            ]
+          ],
+          "style": "solid",
+          "color": "#00d4ff",
+          "thickness": 3
+        },
+        {
+          "key": "bike_bottom_bracket_to_front_axle",
+          "name": "bike_bottom_bracket_to_front_axle",
+          "layer": "bike_landmarks",
+          "type": "straight",
+          "points": [
+            "bottom_bracket",
+            "front_axle"
+          ],
+          "landmark_points": [
+            "bottom_bracket",
+            "front_axle"
+          ],
+          "distance_px": 311.8413057951111,
+          "distance_cm": 68.36369043418259,
+          "distance_in": 26.914838753615193,
+          "label": "68.4 cm",
+          "label_px": "311 px",
+          "label_cm": "68.4 cm",
+          "label_in": "26.91 in",
+          "midpoint": [
+            677.5,
+            716.0
+          ],
+          "line_segments": [
+            [
+              523.0,
+              737.0,
+              832.0,
+              695.0
+            ]
+          ],
+          "style": "solid",
+          "color": "#00d4ff",
+          "thickness": 3
+        },
+        {
+          "key": "bike_bottom_bracket_to_rear_axle",
+          "name": "bike_bottom_bracket_to_rear_axle",
+          "layer": "bike_landmarks",
+          "type": "straight",
+          "points": [
+            "bottom_bracket",
+            "rear_axle"
+          ],
+          "landmark_points": [
+            "bottom_bracket",
+            "rear_axle"
+          ],
+          "distance_px": 207.0869382650678,
+          "distance_cm": 45.398820096711276,
+          "distance_in": 17.873551219177667,
+          "label": "45.4 cm",
+          "label_px": "207 px",
+          "label_cm": "45.4 cm",
+          "label_in": "17.87 in",
+          "midpoint": [
+            419.5,
+            734.0
+          ],
+          "line_segments": [
+            [
+              523.0,
+              737.0,
+              316.0,
+              731.0
+            ]
+          ],
+          "style": "solid",
+          "color": "#00d4ff",
+          "thickness": 3
+        }
+      ],
+      "angles": []
+    }
+  },
+  "cm_per_px": 0.21922589844175275,
+  "scale_reference": {
+    "reference_object": "front_wheel",
+    "reference_size": 30.0,
+    "reference_unit": "in",
+    "cm_per_px": 0.21922589844175275,
+    "wheel_preset": "custom",
+    "wheel_preset_label": "Custom",
+    "note": "Use actual outside tire diameter for wheel-based scaling."
+  },
+  "pose_quality": {
+    "status": "ok",
+    "reason": "selected_largest_person_box",
+    "detected_people": 1,
+    "selected_person_index": 0,
+    "selected_person_box_area": 286271.7052944051,
+    "confidence_threshold": 0.35,
+    "required_points": [
+      5,
+      6,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ]
+  }
+}

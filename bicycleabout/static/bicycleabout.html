@@ -1091,21 +1091,14 @@ async function postBikeLandmarksForFilename(filename, options = {}) {
   window.lastBikeLandmarkLoadKey = null;
   console.log("[BIKE LANDMARK] Saved landmark source:", window.currentBikeLandmarksSource);
 
-  const recalcResponse = await fetch("/recalculate-bike-metrics", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ filename, image_filename: filename })
-  });
-  const recalcResult = await recalcResponse.json();
-  if (recalcResponse.ok && !recalcResult.error) {
-    console.log("[BIKE LANDMARK] Computed bike landmark metrics:", recalcResult.bike_landmark_metrics);
-  }
-  if (recalcResponse.ok && !recalcResult.error && recalcResult.metrics) {
-    window.latestPoseMetrics = recalcResult.metrics;
-    window.latestPoseMetricsSubset = recalcResult.metrics;
-    renderOverlayLabels(window.latestPoseMetrics, window.latestPoseKeypoints || []);
-    if (window.latestPoseMetrics.bike_landmarks) {
-      console.log("[BIKE LANDMARK] Added bike_landmarks to all_metrics", window.latestPoseMetrics.bike_landmarks);
+  if (options.refreshGeometry !== false) {
+    try {
+      await refreshBikeGeometryFromSavedLandmarks(filename, {
+        refreshFeedback: options.refreshFeedback !== false,
+        silent: options.silentGeometryFailure === true
+      });
+    } catch (err) {
+      console.error("Error refreshing bike geometry after saving landmarks:", err);
     }
   }
 
@@ -1183,11 +1176,22 @@ async function saveBikeLandmarks() {
 
   if (!filename) {
     if (window.selectedImageFile) {
+      let savedFilename = null;
       try {
-        await uploadBikeLandmarkAnnotation({ showAlert: true });
+        const result = await uploadBikeLandmarkAnnotation({ showAlert: true });
+        savedFilename = result?.filename || result?.saved_image || window.latestAnnotatedFilename;
       } catch (err) {
         console.error("Error saving bike landmark annotation:", err);
         alert("Failed to save bike landmark annotation.");
+        return;
+      }
+
+      if (savedFilename) {
+        try {
+          await refreshBikeGeometryFromSavedLandmarks(savedFilename, { refreshFeedback: true });
+        } catch (err) {
+          console.error("Error refreshing bike geometry after saving annotation:", err);
+        }
       }
       return;
     }
@@ -1226,6 +1230,112 @@ function getBikeGeometryReferencePayload() {
   };
 }
 
+function getCurrentBikeTypeForRequest() {
+  return getVisibleFeedbackSelection("bikeType", "filterBike", "road");
+}
+
+function getCurrentRidingStyleForRequest() {
+  return getVisibleFeedbackSelection("ridingStyle", "filterStyle", "casual");
+}
+
+function getBikeLandmarkDistanceEntries(metrics) {
+  const bikeMetrics = metrics?.bike_landmarks;
+  if (!bikeMetrics) return [];
+  if (Array.isArray(bikeMetrics.distances)) return bikeMetrics.distances;
+  if (Array.isArray(bikeMetrics)) return bikeMetrics;
+  if (typeof bikeMetrics === "object") {
+    return Object.values(bikeMetrics).filter(entry => entry && typeof entry === "object");
+  }
+  return [];
+}
+
+function hasRealWorldBikeLandmarkMeasurements(metrics) {
+  return getBikeLandmarkDistanceEntries(metrics).some(entry =>
+    entry.distance_in != null ||
+    entry.distance_cm != null ||
+    entry.label_in ||
+    entry.label_cm
+  );
+}
+
+async function refreshBikeGeometryFromSavedLandmarks(filename, options = {}) {
+  if (!filename) return null;
+  if (!window.bikeLandmarks || Object.keys(window.bikeLandmarks).length === 0) {
+    return null;
+  }
+
+  const payload = {
+    image: filename,
+    ...getBikeGeometryReferencePayload(),
+    bike_landmarks: window.bikeLandmarks,
+    landmark_source: window.currentBikeLandmarksSource || null,
+    unit: window.measurementUnit || "in",
+    bike_type: getCurrentBikeTypeForRequest(),
+    style: getCurrentRidingStyleForRequest()
+  };
+
+  const response = await fetch("/analyze-bike-geometry", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  let result = {};
+  try {
+    result = await response.json();
+  } catch (err) {
+    result = {};
+  }
+
+  if (!response.ok || result.ok === false || result.error) {
+    const message = result.error || result.message || "Bike geometry analysis failed.";
+    console.warn("[BIKE GEOMETRY] Refresh failed:", message, result);
+    if (!options.silent) alert(message);
+    throw new Error(message);
+  }
+
+  if (!result.metrics || Object.keys(result.metrics).length === 0) {
+    const message = result.message || "No bike landmarks found. Add or load bike landmarks first.";
+    if (!options.silent) alert(message);
+    return result;
+  }
+
+  window.latestPoseFilename = result.filename || filename;
+  window.latestAnnotatedFilename = result.filename || filename;
+  window.latestPoseMetrics = {
+    ...(window.latestPoseMetrics || {}),
+    ...result.metrics
+  };
+  window.latestPoseMetricsSubset = result.metrics;
+  if (result.scale_reference) {
+    window.currentScaleReference = result.scale_reference;
+    window.latestScaleReference = result.scale_reference;
+  }
+  if (result.landmark_source || result.source) {
+    window.currentBikeLandmarksSource = result.landmark_source || result.source;
+  }
+
+  console.log("[BIKE LANDMARK] Computed bike landmark metrics:", result.metrics.bike_landmarks || result.metrics);
+  if (window.latestPoseMetrics.bike_landmarks) {
+    console.log("[BIKE LANDMARK] Added bike_landmarks to all_metrics", window.latestPoseMetrics.bike_landmarks);
+  }
+
+  renderOverlayLabels(window.latestPoseMetrics, window.latestPoseKeypoints || []);
+  renderBikeLandmarkMarkers();
+
+  const hasRealMeasurements = hasRealWorldBikeLandmarkMeasurements(result.metrics);
+  if (result.warnings?.length) {
+    console.warn("[BIKE GEOMETRY] Warnings:", result.warnings);
+  }
+  if (!hasRealMeasurements) {
+    console.warn("[BIKE GEOMETRY] Bike landmark metrics are pixel-only; skipping feedback refresh.");
+  } else if (options.refreshFeedback !== false) {
+    loadFeedback();
+  }
+
+  return result;
+}
+
 async function ensureBikeLandmarksSavedForGeometry() {
   let filename = getCurrentImageFilenameForBikeGeometry();
 
@@ -1234,7 +1344,7 @@ async function ensureBikeLandmarksSavedForGeometry() {
     filename = result.saved_image || result.filename || result.stem;
     window.latestAnnotatedFilename = filename;
   } else if (filename && window.pendingBikeLandmarks) {
-    await postBikeLandmarksForFilename(filename);
+    await postBikeLandmarksForFilename(filename, { refreshGeometry: false });
   }
 
   return filename;
@@ -1254,44 +1364,15 @@ async function analyzeBikeGeometryOnly() {
       return;
     }
 
-    const response = await fetch("/analyze-bike-geometry", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        image: filename,
-        ...getBikeGeometryReferencePayload(),
-        bike_landmarks: window.bikeLandmarks
-      })
-    });
-
-    const result = await response.json();
-    if (!response.ok || result.error) {
-      throw new Error(result.error || "Bike geometry analysis failed.");
-    }
+    const result = await refreshBikeGeometryFromSavedLandmarks(filename, { refreshFeedback: true });
 
     if (!result.metrics || Object.keys(result.metrics).length === 0) {
       alert(result.message || "No bike landmarks found. Add or load bike landmarks first.");
       return;
     }
-
-    window.latestPoseFilename = result.filename || filename;
-    window.latestAnnotatedFilename = result.filename || filename;
-    window.latestPoseKeypoints = [];
-    window.latestKeypoints = [];
-    window.latestPoseMetrics = {
-      ...(window.latestPoseMetrics || {}),
-      ...result.metrics
-    };
-    window.latestScaleReference = result.scale_reference || null;
-    if (result.scale_reference) window.currentScaleReference = result.scale_reference;
-    window.latestPoseMetricsSubset = result.metrics;
-
-    renderOverlayLabels(window.latestPoseMetricsSubset, []);
-    renderBikeLandmarkMarkers();
-    loadFeedback();
   } catch (err) {
     console.error("Error analyzing bike geometry:", err);
-    alert("Bike geometry analysis failed.");
+    alert(err.message || "Bike geometry analysis failed.");
   }
 }
 
@@ -1981,12 +2062,16 @@ let lastPoseType = "seated";
         window.latestPoseFilename = data.filename;
         window.latestAnnotatedFilename = data.filename;
         window.lastBikeLandmarkLoadKey = null;
-        window.latestPoseMetrics = data.metrics;
+        window.latestPoseMetrics = {
+          ...(window.latestPoseMetrics || {}),
+          ...(data.metrics || {})
+        };
         window.latestScaleReference = data.scale_reference || null;
         if (data.scale_reference) window.currentScaleReference = data.scale_reference;
         window.latestPoseKeypoints = data.keypoints || [];
         window.latestKeypoints = window.latestPoseKeypoints;
-        renderOverlayLabels(window.latestPoseMetrics, window.latestPoseKeypoints);
+        window.latestPoseMetricsSubset = data.metrics || {};
+        renderOverlayLabels(window.latestPoseMetricsSubset, window.latestPoseKeypoints);
         if (Object.keys(window.bikeLandmarks || {}).length > 0) {
           try {
             await carryBikeLandmarksToProcessedFilename(data.filename);
@@ -1994,7 +2079,7 @@ let lastPoseType = "seated";
             console.error("Error carrying bike landmarks forward:", err);
           }
         }
-        loadFeedback();
+        loadFeedback(window.latestPoseMetrics);
     })
     .catch(error => {
         console.error("Annotation error:", error);
@@ -2074,7 +2159,7 @@ function applyOverlay(layerName, buttonElement = null) {
     window.latestPoseMetricsSubset = metricsSubset;
 
     renderOverlayLabels(metricsSubset, window.latestPoseKeypoints);
-    loadFeedback();
+    loadFeedback(window.latestPoseMetrics);
     return;
   }
 
@@ -2115,7 +2200,7 @@ function applyOverlay(layerName, buttonElement = null) {
       window.latestPoseMetricsSubset = metricsSubset;
 
       renderOverlayLabels(metricsSubset, window.latestPoseKeypoints);
-      loadFeedback();
+      loadFeedback(window.latestPoseMetrics);
     })
     .catch(err => {
       console.error("Error loading overlay:", err);
@@ -2349,7 +2434,8 @@ async function analyzeAllLayers() {
   clearAllButtonStates();
   setButtonState("btn-analyze-all", true);
 
-  window.latestPoseMetrics = {};
+  const preservedBikeLandmarks = window.latestPoseMetrics?.bike_landmarks;
+  window.latestPoseMetrics = preservedBikeLandmarks ? { bike_landmarks: preservedBikeLandmarks } : {};
   window.latestPoseMetricsSubset = {};
 
   for (const layer of canonicalOverlayLayers) {
@@ -2367,7 +2453,7 @@ async function analyzeAllLayers() {
   const imgUrl = `/media/${filename}`;
   document.getElementById("analyzeImage").src = imgUrl;
   renderOverlayLabels(window.latestPoseMetrics, window.latestPoseKeypoints);
-  loadFeedback();
+  loadFeedback(window.latestPoseMetrics);
 }
 
 
@@ -2479,11 +2565,14 @@ if (!file && !window.latestPoseFilename) {
     window.latestPoseFilename = filename;
     window.latestAnnotatedFilename = filename;
     window.lastBikeLandmarkLoadKey = null;
-    window.latestPoseMetrics = metrics;
+    window.latestPoseMetrics = {
+      ...(window.latestPoseMetrics || {}),
+      ...(metrics || {})
+    };
     window.latestPoseKeypoints = keypoints;
     window.latestScaleReference = result.scale_reference || null;
     if (result.scale_reference) window.currentScaleReference = result.scale_reference;
-    window.latestPoseMetricsSubset = metrics;
+    window.latestPoseMetricsSubset = metrics || {};
 
     // Update the image
     const imageUrl = `/media/${filename}`;
@@ -2501,7 +2590,7 @@ if (!file && !window.latestPoseFilename) {
     }
 
     // Load feedback
-    loadFeedback();
+    loadFeedback(window.latestPoseMetrics);
 
     // Visually mark that Analyze All is active
     const allBtn = document.getElementById("btn-analyze-all");
@@ -2553,8 +2642,9 @@ function clearSelections() {
   window.latestPoseMetricsSubset = {};
 
   // 5) reload the feedback table (or clear it)
-  if (typeof loadFeedback === "function") {
-    loadFeedback();
+  if (typeof renderFeedbackTable === "function") {
+    renderFeedbackTable([]);
+    window.latestFeedback = [];
   } else if (window.feedbackTable) {
     window.feedbackTable.clear().draw();
   }
@@ -2632,10 +2722,10 @@ function syncFeedbackDropdowns() {
   if (ridingStyle && filterStyle) setDropdownToMatchingValue(filterStyle, ridingStyle.value);
 }
 
-function loadFeedback() {
+function loadFeedback(metricsOverride = null) {
   syncFeedbackDropdowns();
 
-  const poseMetrics = window.latestPoseMetricsSubset || window.latestPoseMetrics || {};
+  const poseMetrics = metricsOverride || window.latestPoseMetrics || {};
   const preferredUnit = window.measurementUnit || "in";
 
   let metricsForFeedback;
@@ -2649,9 +2739,22 @@ function loadFeedback() {
     metricsForFeedback = poseMetrics;
   }
 
+  if (metricsForFeedback?.bike_landmarks && !hasRealWorldBikeLandmarkMeasurements(metricsForFeedback)) {
+    const nonBikeMetricKeys = Object.keys(metricsForFeedback).filter(key => key !== "bike_landmarks");
+    console.warn("[FEEDBACK DEBUG] Skipping pixel-only bike landmark metrics.");
+    if (nonBikeMetricKeys.length === 0) {
+      renderFeedbackTable([]);
+      window.latestFeedback = [];
+      return;
+    }
+    metricsForFeedback = { ...metricsForFeedback };
+    delete metricsForFeedback.bike_landmarks;
+  }
+
   const bikeType = getVisibleFeedbackSelection("bikeType", "filterBike", "road");
   const ridingStyle = getVisibleFeedbackSelection("ridingStyle", "filterStyle", "casual");
   console.log("[FEEDBACK DEBUG] bike_type:", bikeType, "style:", ridingStyle);
+  console.log("[FEEDBACK] Sending metric keys:", Object.keys(metricsForFeedback || {}));
 
   fetch("/feedback", {
     method: "POST",

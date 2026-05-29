@@ -1,0 +1,54 @@
+{
+  "image": "dy_10ftaway_14incheshigh_20260528_185306_51033b89456d4b898ff9035811f56343.png",
+  "original_filename": "dy_10ftaway_14incheshigh_20260528_185306.png",
+  "saved_image": "bike_landmark_annotations/images/dy_10ftaway_14incheshigh_20260528_185306_51033b89456d4b898ff9035811f56343.png",
+  "image_width": 1195,
+  "image_height": 896,
+  "bike_landmarks": {
+    "visible_pedal_spindle": {
+      "x": 643,
+      "y": 639,
+      "visible": true
+    },
+    "front_axle": {
+      "x": 942,
+      "y": 598,
+      "visible": true
+    },
+    "rear_axle": {
+      "x": 275,
+      "y": 600,
+      "visible": true
+    },
+    "bottom_bracket": {
+      "x": 537,
+      "y": 636,
+      "visible": true
+    },
+    "saddle_center": {
+      "x": 418,
+      "y": 240,
+      "visible": true
+    },
+    "handlebar_center": {
+      "x": 811,
+      "y": 208,
+      "visible": true
+    },
+    "visible_hood_or_grip": {
+      "x": 791,
+      "y": 158,
+      "visible": true
+    }
+  },
+  "scale_reference": {
+    "reference_object": "front_wheel",
+    "reference_size": 29.5,
+    "reference_unit": "in",
+    "cm_per_px": null,
+    "wheel_preset": "mtb_29er",
+    "wheel_preset_label": "29er MTB: 29.5 in",
+    "note": "Use actual outside tire diameter for wheel-based scaling."
+  },
+  "saved_at": "2026-05-29T01:31:17.583706+00:00"
+}

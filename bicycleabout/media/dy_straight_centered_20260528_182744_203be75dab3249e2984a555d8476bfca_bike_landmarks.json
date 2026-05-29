@@ -1,0 +1,56 @@
+{
+  "filename": "dy_straight_centered_20260528_182744_203be75dab3249e2984a555d8476bfca.png",
+  "image_filename": "dy_straight_centered_20260528_182744_069737d8c2584db48a1522083bf2ba3f.png",
+  "image_width": 1195,
+  "image_height": 896,
+  "bike_landmarks": {
+    "front_axle": {
+      "x": 832,
+      "y": 695,
+      "visible": true
+    },
+    "rear_axle": {
+      "x": 316,
+      "y": 731,
+      "visible": true
+    },
+    "bottom_bracket": {
+      "x": 523,
+      "y": 737,
+      "visible": true
+    },
+    "saddle_center": {
+      "x": 422,
+      "y": 465,
+      "visible": true
+    },
+    "handlebar_center": {
+      "x": 722,
+      "y": 411,
+      "visible": true
+    },
+    "visible_hood_or_grip": {
+      "x": 711,
+      "y": 401,
+      "visible": true
+    },
+    "visible_pedal_spindle": {
+      "x": 597,
+      "y": 761,
+      "visible": true
+    }
+  },
+  "scale_reference": {
+    "reference_object": "front_wheel",
+    "reference_size": 30.0,
+    "reference_unit": "in",
+    "cm_per_px": null,
+    "wheel_preset": "custom",
+    "wheel_preset_label": "Custom",
+    "note": "Use actual outside tire diameter for wheel-based scaling."
+  },
+  "image": "dy_straight_centered_20260528_182744_069737d8c2584db48a1522083bf2ba3f.png",
+  "original_filename": "dy_straight_centered_20260528_182744.png",
+  "saved_image": "bike_landmark_annotations/images/dy_straight_centered_20260528_182744.png",
+  "saved_at": "2026-05-29T12:10:35.397209+00:00"
+}

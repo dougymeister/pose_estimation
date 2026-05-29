@@ -1,0 +1,53 @@
+{
+  "image": "dy_11_5ftx9_5inch_20260528_193944_2398d2cd47de44fcbc38e60a9f44a96c.png",
+  "original_filename": "dy_11_5ftx9_5inch_20260528_193944.png",
+  "saved_image": "bike_landmark_annotations/images/dy_11_5ftx9_5inch_20260528_193944_2398d2cd47de44fcbc38e60a9f44a96c.png",
+  "image_width": 1195,
+  "image_height": 896,
+  "bike_landmarks": {
+    "visible_pedal_spindle": {
+      "x": 622,
+      "y": 608,
+      "visible": true
+    },
+    "front_axle": {
+      "x": 896,
+      "y": 568,
+      "visible": true
+    },
+    "rear_axle": {
+      "x": 301,
+      "y": 571,
+      "visible": true
+    },
+    "bottom_bracket": {
+      "x": 534,
+      "y": 605,
+      "visible": true
+    },
+    "saddle_center": {
+      "x": 432,
+      "y": 247,
+      "visible": true
+    },
+    "handlebar_center": {
+      "x": 784,
+      "y": 209,
+      "visible": true
+    },
+    "visible_hood_or_grip": {
+      "x": 772,
+      "y": 187,
+      "visible": true
+    }
+  },
+  "scale_reference": {
+    "reference_object": "front_wheel",
+    "reference_size": 30.0,
+    "reference_unit": "in",
+    "cm_per_px": null,
+    "wheel_preset": "custom",
+    "wheel_preset_label": "Custom",
+    "note": "Use actual outside tire diameter for wheel-based scaling."
+  }
+}

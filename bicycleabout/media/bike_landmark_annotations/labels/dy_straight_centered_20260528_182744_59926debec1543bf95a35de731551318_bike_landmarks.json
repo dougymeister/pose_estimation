@@ -1,0 +1,44 @@
+{
+  "image": "dy_straight_centered_20260528_182744_59926debec1543bf95a35de731551318.png",
+  "original_filename": "dy_straight_centered_20260528_182744.png",
+  "saved_image": "bike_landmark_annotations/images/dy_straight_centered_20260528_182744_59926debec1543bf95a35de731551318.png",
+  "image_width": 1195,
+  "image_height": 896,
+  "bike_landmarks": {
+    "front_axle": {
+      "x": 832,
+      "y": 695,
+      "visible": true
+    },
+    "rear_axle": {
+      "x": 316,
+      "y": 731,
+      "visible": true
+    },
+    "bottom_bracket": {
+      "x": 523,
+      "y": 737,
+      "visible": true
+    },
+    "saddle_center": {
+      "x": 422,
+      "y": 465,
+      "visible": true
+    },
+    "handlebar_center": {
+      "x": 722,
+      "y": 411,
+      "visible": true
+    },
+    "visible_hood_or_grip": {
+      "x": 711,
+      "y": 401,
+      "visible": true
+    },
+    "visible_pedal_spindle": {
+      "x": 597,
+      "y": 761,
+      "visible": true
+    }
+  }
+}

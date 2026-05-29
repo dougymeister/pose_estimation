@@ -1,0 +1,584 @@
+{
+  "bicycle_nobgnd_sample_2026_56cmCerveloCaledonia105.png": {
+    "scenario": "Bike-only side image: 2026 56cm Cervelo Caledonia 105",
+    "wheel_diameter_in": 27.0,
+    "scale_reference": {
+      "reference_object": "front_wheel",
+      "reference_size": 27.0,
+      "reference_unit": "in",
+      "wheel_preset": "custom",
+      "expected_cm_per_px": 0.13494200608191842
+    },
+    "expected": {
+      "valid_metrics": [
+        "bike_saddle_to_bar_distance",
+        "bike_saddle_to_bar_horizontal_reach",
+        "bike_saddle_to_bar_vertical_drop",
+        "bike_saddle_height",
+        "bike_wheelbase",
+        "bike_bottom_bracket_to_front_axle",
+        "bike_bottom_bracket_to_rear_axle"
+      ],
+      "not_evaluated_metrics": [
+        "left_knee_angle",
+        "right_knee_angle",
+        "left_hip_angle",
+        "right_hip_angle",
+        "torso_angle",
+        "arm_reach"
+      ],
+      "expected_feedback_keys": [
+        "bike_saddle_to_bar_distance",
+        "bike_saddle_to_bar_horizontal_reach",
+        "bike_saddle_to_bar_vertical_drop",
+        "bike_saddle_height",
+        "bike_wheelbase"
+      ],
+      "metrics_with_no_feedback_rule_yet": [
+        "bike_bottom_bracket_to_front_axle",
+        "bike_bottom_bracket_to_rear_axle"
+      ],
+      "must_not_contain": [
+        "NaN",
+        "undefined",
+        "null°"
+      ],
+      "pose_detection_expected": false
+    },
+    "observed_values": {
+      "bike_saddle_to_bar_distance_in": 26.151435298693766,
+      "bike_saddle_to_bar_horizontal_reach_in": 26.085246057567694,
+      "bike_saddle_to_bar_vertical_drop_in": 1.859437091679978,
+      "bike_saddle_height_in": 29.513441194005637,
+      "bike_wheelbase_in": 40.17652354663044,
+      "bike_bottom_bracket_to_front_axle_in": 24.111889433682045,
+      "bike_bottom_bracket_to_rear_axle_in": 16.46210056030704
+    },
+    "notes": "This is a bicycle-only validation case. Geometry should work; rider pose metrics should be absent or not evaluated. /annotate no-detection result is acceptable."
+  },
+  "dy_11_5ftx9_5inch_20260528_193944.png": {
+    "scenario": "Bike-only real photo: camera 11.5 ft back, 9.5 in high",
+    "wheel_diameter_in": 30.0,
+    "scale_reference": {
+      "reference_object": "front_wheel",
+      "reference_size": 30.0,
+      "reference_unit": "in",
+      "wheel_preset": "custom",
+      "wheel_preset_label": "Custom",
+      "expected_cm_per_px": 0.18380042460188145
+    },
+    "expected": {
+      "valid_metrics": [
+        "bike_saddle_to_bar_distance",
+        "bike_saddle_to_bar_horizontal_reach",
+        "bike_saddle_to_bar_vertical_drop",
+        "bike_saddle_height",
+        "bike_wheelbase",
+        "bike_bottom_bracket_to_front_axle",
+        "bike_bottom_bracket_to_rear_axle"
+      ],
+      "not_evaluated_metrics": [
+        "left_knee_angle",
+        "right_knee_angle",
+        "left_hip_angle",
+        "right_hip_angle",
+        "torso_angle",
+        "arm_reach"
+      ],
+      "expected_feedback_keys": [
+        "bike_saddle_to_bar_distance",
+        "bike_saddle_to_bar_horizontal_reach",
+        "bike_saddle_to_bar_vertical_drop",
+        "bike_saddle_height",
+        "bike_wheelbase"
+      ],
+      "expected_feedback_statuses": {
+        "bike_saddle_to_bar_distance": "OK",
+        "bike_saddle_to_bar_horizontal_reach": "OK",
+        "bike_saddle_to_bar_vertical_drop": "OK",
+        "bike_saddle_height": "OK",
+        "bike_wheelbase": "OK"
+      },
+      "metrics_with_no_feedback_rule_yet": [
+        "bike_bottom_bracket_to_front_axle",
+        "bike_bottom_bracket_to_rear_axle"
+      ],
+      "must_not_contain": [
+        "NaN",
+        "undefined",
+        "null°"
+      ],
+      "pose_detection_expected": false
+    },
+    "observed_values": {
+      "bike_saddle_to_bar_distance_in": 25.619550056152338,
+      "bike_saddle_to_bar_horizontal_reach_in": 25.471554905457584,
+      "bike_saddle_to_bar_vertical_drop_in": 2.749770131839171,
+      "bike_saddle_height_in": 26.936692468883173,
+      "bike_wheelbase_in": 43.056158549814874,
+      "bike_bottom_bracket_to_front_axle_in": 26.331651970115704,
+      "bike_bottom_bracket_to_rear_axle_in": 17.03899547609198
+    },
+    "notes": "This is a bicycle-only validation case using real camera setup. Geometry should work; rider pose metrics should be absent or not evaluated. Existing feedback rules should return OK for the five supported bike geometry metrics."
+  },
+  "dy_nobgnd_20260528_145141.png": {
+    "scenario": "Bike + rider side image with saved bike landmarks and one detected person",
+    "wheel_diameter_in": 30.0,
+    "scale_reference": {
+      "reference_object": "front_wheel",
+      "reference_size": 30.0,
+      "reference_unit": "in",
+      "wheel_preset": "custom",
+      "wheel_preset_label": "Custom",
+      "expected_cm_per_px": 0.21869429886263134
+    },
+    "expected": {
+      "person_detection": {
+        "expected_people": 1,
+        "selected_person_index": 0
+      },
+      "valid_bike_metrics": [
+        "bike_saddle_to_bar_distance",
+        "bike_saddle_to_bar_horizontal_reach",
+        "bike_saddle_to_bar_vertical_drop",
+        "bike_saddle_height",
+        "bike_wheelbase",
+        "bike_bottom_bracket_to_front_axle",
+        "bike_bottom_bracket_to_rear_axle"
+      ],
+      "valid_pose_metrics": [
+        "shoulder_angle_left_11_5_7",
+        "shoulder_angle_right_12_6_8",
+        "arm_reach_distance_left_5_9",
+        "arm_reach_distance_right_6_10",
+        "arm_reach_distance_horizon_left_5_9",
+        "arm_reach_distance_horizon_right_6_10",
+        "leg_length_left_11_15",
+        "leg_length_right_12_16",
+        "knee_length_left_13_15",
+        "knee_length_right_14_16",
+        "reach_distance_left_5_7",
+        "reach_distance_right_6_8"
+      ],
+      "computed_but_should_not_be_fit_evaluated": [
+        "knee_angle_left_11_13_15",
+        "knee_angle_right_12_14_16",
+        "hip_angle_left_5_11_13",
+        "hip_angle_right_6_12_14"
+      ],
+      "not_evaluated_metrics": [
+        "kops",
+        "left_knee_angle_fit_status",
+        "right_knee_angle_fit_status",
+        "left_hip_angle_fit_status",
+        "right_hip_angle_fit_status"
+      ],
+      "expected_feedback_keys": [
+        "bike_saddle_to_bar_distance",
+        "bike_saddle_to_bar_horizontal_reach",
+        "bike_saddle_to_bar_vertical_drop",
+        "bike_saddle_height",
+        "bike_wheelbase"
+      ],
+      "expected_feedback_statuses": {
+        "bike_saddle_to_bar_distance": "OK",
+        "bike_saddle_to_bar_horizontal_reach": "OK",
+        "bike_saddle_to_bar_vertical_drop": "OK",
+        "bike_saddle_height": "OK",
+        "bike_wheelbase": "OK"
+      },
+      "must_not_contain": [
+        "NaN",
+        "undefined",
+        "null°"
+      ]
+    },
+    "observed_values": {
+      "bike_saddle_to_bar_distance_in": 24.804306729315375,
+      "bike_saddle_to_bar_horizontal_reach_in": 24.71073376912409,
+      "bike_saddle_to_bar_vertical_drop_in": 2.152502941561332,
+      "bike_saddle_height_in": 25.142561207798458,
+      "bike_wheelbase_in": 41.16026908741858,
+      "bike_bottom_bracket_to_front_axle_in": 25.84868359255342,
+      "bike_bottom_bracket_to_rear_axle_in": 15.687479242715419,
+      "left_knee_angle_deg": 74.32912551054679,
+      "right_knee_angle_deg": 114.36528799205288,
+      "left_hip_angle_deg": 85.01698827022227,
+      "right_hip_angle_deg": 103.82977310654275,
+      "left_shoulder_angle_deg": 44.104921101650895,
+      "right_shoulder_angle_deg": 54.188431183685125,
+      "left_arm_reach_distance_in": 20.027116915692154,
+      "right_arm_reach_distance_in": 18.325950107849813,
+      "left_arm_reach_horizontal_in": 12.353070390945195,
+      "right_arm_reach_horizontal_in": 11.107695565875472,
+      "left_leg_length_in": 18.04641287307386,
+      "right_leg_length_in": 25.011110261029486,
+      "left_knee_length_in": 15.175605778786368,
+      "right_knee_length_in": 15.654246751814192,
+      "crank_angle_deg": -54.27260177720031,
+      "kops_valid": false
+    },
+    "notes": "This is a bike+rider validation case. The app should detect one person, compute static pose and bike geometry metrics, and use the 30.0 in front wheel scale. Because crank_angle_deg is -54.27 and KOPS validity is false, crank-dependent fit feedback such as knee angle, hip angle, and KOPS should be shown as not_evaluated or low confidence, not Too Low/Too High."
+  },
+  "dy_straight_centered_20260528_182744.png": {
+    "scenario": "Bike + rider centered side image; tests scale recalculation consistency",
+    "wheel_diameter_in": 30.0,
+    "scale_reference": {
+      "reference_object": "front_wheel",
+      "reference_size": 30.0,
+      "reference_unit": "in",
+      "wheel_preset": "custom",
+      "wheel_preset_label": "Custom",
+      "expected_cm_per_px_after_annotate": 0.21922589844175275
+    },
+    "expected": {
+      "person_detection": {
+        "expected_people": 1,
+        "selected_person_index": 0
+      },
+      "valid_bike_metrics": [
+        "bike_saddle_to_bar_distance",
+        "bike_saddle_to_bar_horizontal_reach",
+        "bike_saddle_to_bar_vertical_drop",
+        "bike_saddle_height",
+        "bike_wheelbase",
+        "bike_bottom_bracket_to_front_axle",
+        "bike_bottom_bracket_to_rear_axle"
+      ],
+      "valid_pose_metrics": [
+        "shoulder_angle_left_11_5_7",
+        "shoulder_angle_right_12_6_8",
+        "arm_reach_distance_left_5_9",
+        "arm_reach_distance_right_6_10",
+        "arm_reach_distance_horizon_left_5_9",
+        "arm_reach_distance_horizon_right_6_10",
+        "leg_length_left_11_15",
+        "leg_length_right_12_16",
+        "knee_length_left_13_15",
+        "knee_length_right_14_16",
+        "reach_distance_left_5_7",
+        "reach_distance_right_6_8"
+      ],
+      "computed_but_should_not_be_fit_evaluated": [
+        "knee_angle_left_11_13_15",
+        "knee_angle_right_12_14_16",
+        "hip_angle_left_5_11_13",
+        "hip_angle_right_6_12_14"
+      ],
+      "not_evaluated_metrics": [
+        "kops",
+        "left_knee_angle_fit_status",
+        "right_knee_angle_fit_status",
+        "left_hip_angle_fit_status",
+        "right_hip_angle_fit_status"
+      ],
+      "must_not_contain": [
+        "NaN",
+        "undefined",
+        "null°"
+      ],
+      "regression_checks": [
+        "bike geometry should not remain pixel-only when wheel scale is available",
+        "feedback should not be empty after valid scale is computed",
+        "legacy bike metric refresh route should be fixed or removed from client calls"
+      ]
+    },
+    "observed_values": {
+      "initial_bike_geometry_cm_per_px": null,
+      "annotate_cm_per_px": 0.21922589844175275,
+      "bike_saddle_to_bar_distance_in_after_scale": 26.30894267346148,
+      "bike_saddle_to_bar_horizontal_reach_in_after_scale": 25.892822650600717,
+      "bike_saddle_to_bar_vertical_drop_in_after_scale": 4.660708077108129,
+      "bike_saddle_height_in_after_scale": 25.042374160497026,
+      "bike_wheelbase_in_after_scale": 44.643911943773524,
+      "bike_bottom_bracket_to_front_axle_in_after_scale": 26.914838753615193,
+      "bike_bottom_bracket_to_rear_axle_in_after_scale": 17.873551219177667,
+      "left_knee_angle_deg": 130.248188256886,
+      "right_knee_angle_deg": 114.13779420703754,
+      "left_hip_angle_deg": 128.71834345370263,
+      "right_hip_angle_deg": 102.20375916063014,
+      "left_shoulder_angle_deg": 55.410149854880025,
+      "right_shoulder_angle_deg": 39.252519398548436,
+      "left_arm_reach_distance_in": 19.55672646274806,
+      "right_arm_reach_distance_in": 22.23863475075525,
+      "left_arm_reach_horizontal_in": 13.356233515837088,
+      "right_arm_reach_horizontal_in": 15.017402534917451,
+      "left_leg_length_in": 26.61791365359338,
+      "right_leg_length_in": 27.43221384035314,
+      "left_knee_length_in": 15.592645999744285,
+      "right_knee_length_in": 16.97890690919338,
+      "crank_angle_deg": 17.96913974015702,
+      "kops_valid": false
+    },
+    "notes": "This image should be used to test that saved wheel diameter and wheel detection produce real-world units consistently. The initial bike-geometry route returned pixel-only distances, while annotate later produced real cm/in values. Crank angle is not valid for KOPS or knee/hip fit judgment."
+  },
+  "dybike_good_download.jpg": {
+    "scenario": "Bike + rider image; 700C road tire; validates saved landmarks, scale conversion, Analyze Landmarks, Process, and merged feedback",
+    "result": "pass",
+    "wheel_diameter_in": 27.0,
+    "scale_reference": {
+      "reference_object": "front_wheel",
+      "reference_size": 27.0,
+      "reference_unit": "in",
+      "wheel_preset": "700c_road",
+      "wheel_preset_label": "700C road: 27.0 in",
+      "expected_cm_per_px": 0.2190250937949616,
+      "detected_front_wheel_px": 313.11480712890625
+    },
+    "expected": {
+      "workflow": {
+        "load_saved_landmarks": true,
+        "analyze_landmarks_returns_200": true,
+        "process_returns_200": true,
+        "feedback_returns_200": true,
+        "no_recalculate_bike_metrics_404": true,
+        "no_null_landmark_measurements": true,
+        "feedback_table_shows_landmark_rows": true,
+        "feedback_table_shows_process_rows": true
+      },
+      "scale_resolution": {
+        "should_find_existing_image_path": true,
+        "should_detect_front_wheel": true,
+        "should_compute_cm_per_px": true,
+        "should_return_real_world_units": true,
+        "must_not_return_pixel_only_metrics": true
+      },
+      "person_detection": {
+        "expected_people": 1,
+        "selected_person_index": 0
+      },
+      "valid_bike_metrics": [
+        "bike_saddle_to_bar_distance",
+        "bike_saddle_to_bar_horizontal_reach",
+        "bike_saddle_to_bar_vertical_drop",
+        "bike_saddle_height",
+        "bike_wheelbase",
+        "bike_bottom_bracket_to_front_axle",
+        "bike_bottom_bracket_to_rear_axle"
+      ],
+      "valid_process_metrics": [
+        "knee_angle_left_11_13_15",
+        "knee_angle_right_12_14_16",
+        "hip_angle_left_5_11_13",
+        "hip_angle_right_6_12_14",
+        "shoulder_angle_left_11_5_7",
+        "shoulder_angle_right_12_6_8",
+        "arm_reach_distance_left_5_9",
+        "arm_reach_distance_horizon_left_5_9",
+        "arm_reach_distance_right_6_10",
+        "arm_reach_distance_horizon_right_6_10",
+        "leg_length_left_11_15",
+        "leg_length_right_12_16",
+        "knee_length_left_13_15",
+        "knee_length_right_14_16",
+        "reach_distance_left_5_7",
+        "reach_distance_right_6_8"
+      ],
+      "valid_kops": {
+        "expected_present": true,
+        "expected_valid": true,
+        "selected_knee": "right_knee"
+      },
+      "expected_bike_feedback_statuses": {
+        "bike_saddle_to_bar_distance": "OK",
+        "bike_saddle_to_bar_horizontal_reach": "OK",
+        "bike_saddle_to_bar_vertical_drop": "Too High",
+        "bike_saddle_height": "OK",
+        "bike_wheelbase": "OK"
+      },
+      "expected_feedback_groups": [
+        "bike_landmarks",
+        "process_pose"
+      ],
+      "metrics_with_no_feedback_rule_yet": [
+        "bike_bottom_bracket_to_front_axle",
+        "bike_bottom_bracket_to_rear_axle"
+      ],
+      "must_not_contain": [
+        "NaN",
+        "undefined",
+        "null°",
+        "distance_cm: None",
+        "distance_in: None",
+        "legacy bike metric refresh 404"
+      ],
+      "known_followup": [
+        "Knee and hip fit feedback should be marked not_evaluated or suppressed unless the pedal/crank position is valid for those specific metrics. KOPS validity alone should not authorize knee-extension or hip-angle fit judgment."
+      ]
+    },
+    "observed_values": {
+      "cm_per_px": 0.2190250937949616,
+      "front_wheel_px": 313.11480712890625,
+      "bike_saddle_to_bar_distance_in": 21.08327695146918,
+      "bike_saddle_to_bar_horizontal_reach_in": 20.522823749291675,
+      "bike_saddle_to_bar_vertical_drop_in": 4.828899705715688,
+      "bike_saddle_height_in": 25.550534904198315,
+      "bike_wheelbase_in": 41.41077421312564,
+      "bike_bottom_bracket_to_front_axle_in": 24.22597193504262,
+      "bike_bottom_bracket_to_rear_axle_in": 17.401661036176005,
+      "left_knee_angle_deg": 109.64966488559175,
+      "right_knee_angle_deg": 108.18077633409209,
+      "left_hip_angle_deg": 108.10864400570728,
+      "right_hip_angle_deg": 98.26520285368477,
+      "left_shoulder_angle_deg": 46.54029141589999,
+      "right_shoulder_angle_deg": 34.78515385790982,
+      "left_arm_reach_distance_in": 18.507876271608183,
+      "left_arm_reach_horizontal_in": 12.29480399206795,
+      "right_arm_reach_distance_in": 18.69005342519831,
+      "right_arm_reach_horizontal_in": 11.38895635598168,
+      "left_leg_length_in": 21.031562806023192,
+      "right_leg_length_in": 27.664130898182556,
+      "left_knee_length_in": 12.904837456858065,
+      "right_knee_length_in": 17.293962262313425,
+      "left_reach_distance_in": 10.148802138764315,
+      "right_reach_distance_in": 9.9837724653048,
+      "kops_crank_angle_deg": 13.448615051686517,
+      "kops_selected_knee": "right_knee",
+      "kops_signed_offset_in": -0.4163782854551972,
+      "kops_valid": true
+    },
+    "notes": "This is a pass case for the repaired image-only workflow. Saved bike landmarks load, front-wheel scale resolves correctly, Analyze Landmarks returns real cm/in bike metrics, Process detects one rider and generates pose metrics, and feedback displays both Landmark and Process rows. Remaining improvement is metric-validity gating for knee/hip fit judgments."
+  },
+  "TREK_54CM_520Disc_19_24000_B_Primary_off_white.jpg": {
+    "scenario": "Bike-only image: Trek 520 Disc 54cm, custom 29 in tire; validates saved landmarks, scale conversion, bike geometry, and no-rider behavior",
+    "result": "pass",
+    "wheel_diameter_in": 29.0,
+    "scale_reference": {
+      "reference_object": "front_wheel",
+      "reference_size": 29.0,
+      "reference_unit": "in",
+      "wheel_preset": "custom",
+      "wheel_preset_label": "Custom",
+      "expected_cm_per_px": 0.14710092879256964,
+      "detected_front_wheel_px": 500.74462890625,
+      "scale_selection_reason": "largest labeled front_wheel, assuming outside tire diameter",
+      "scale_selection_confidence": "exact",
+      "detected_wheel_candidates_px": [
+        {
+          "label": "front_wheel",
+          "diameter_px": 475.25043
+        },
+        {
+          "label": "undefined",
+          "diameter_px": 499.017
+        },
+        {
+          "label": "front_wheel",
+          "diameter_px": 500.74454
+        }
+      ]
+    },
+    "expected": {
+      "workflow": {
+        "load_saved_landmarks": true,
+        "save_scale_reference": true,
+        "analyze_landmarks_returns_200": true,
+        "feedback_returns_200": true,
+        "process_returns_200": true,
+        "pose_detection_expected": false,
+        "no_recalculate_bike_metrics_404": true,
+        "no_null_landmark_measurements": true,
+        "feedback_table_shows_landmark_rows": true,
+        "feedback_table_shows_process_rows": false
+      },
+      "scale_resolution": {
+        "should_find_existing_image_path": true,
+        "selected_image_path_contains": "bike_landmark_annotations/images/TREK_54CM_520Disc_19_24000_B_Primary_off_white_0689e6c8884f4e278747ec87e1720061.jpg",
+        "should_detect_front_wheel": true,
+        "should_compute_cm_per_px": true,
+        "should_return_real_world_units": true,
+        "must_not_return_pixel_only_metrics": true
+      },
+      "person_detection": {
+        "expected_people": 0,
+        "selected_person_index": null
+      },
+      "valid_bike_metrics": [
+        "bike_saddle_to_bar_distance",
+        "bike_saddle_to_bar_horizontal_reach",
+        "bike_saddle_to_bar_vertical_drop",
+        "bike_saddle_height",
+        "bike_wheelbase",
+        "bike_bottom_bracket_to_front_axle",
+        "bike_bottom_bracket_to_rear_axle"
+      ],
+      "not_evaluated_metrics": [
+        "knee_angle_left_11_13_15",
+        "knee_angle_right_12_14_16",
+        "hip_angle_left_5_11_13",
+        "hip_angle_right_6_12_14",
+        "shoulder_angle_left_11_5_7",
+        "shoulder_angle_right_12_6_8",
+        "arm_reach_distance_left_5_9",
+        "arm_reach_distance_right_6_10",
+        "leg_length_left_11_15",
+        "leg_length_right_12_16",
+        "knee_length_left_13_15",
+        "knee_length_right_14_16",
+        "reach_distance_left_5_7",
+        "reach_distance_right_6_8",
+        "kops"
+      ],
+      "expected_bike_feedback_statuses": {
+        "bike_saddle_to_bar_distance": "OK",
+        "bike_saddle_to_bar_horizontal_reach": "OK",
+        "bike_saddle_to_bar_vertical_drop": "OK",
+        "bike_saddle_height": "OK",
+        "bike_wheelbase": "OK"
+      },
+      "metrics_with_no_feedback_rule_yet": [
+        "bike_bottom_bracket_to_front_axle",
+        "bike_bottom_bracket_to_rear_axle"
+      ],
+      "must_not_contain": [
+        "NaN",
+        "undefined°",
+        "null°",
+        "distance_cm: None",
+        "distance_in: None",
+        "legacy bike metric refresh 404",
+        "422 Unprocessable Entity"
+      ]
+    },
+    "observed_values": {
+      "cm_per_px": 0.14710092879256964,
+      "front_wheel_px": 500.74462890625,
+      "bike_saddle_to_bar_distance_in": 25.662327619788044,
+      "bike_saddle_to_bar_horizontal_reach_in": 25.655791911459982,
+      "bike_saddle_to_bar_vertical_drop_in": 0.5791375149313766,
+      "bike_saddle_height_in": 27.774097226487417,
+      "bike_wheelbase_in": 41.82158870858928,
+      "bike_bottom_bracket_to_front_axle_in": 24.251966890169577,
+      "bike_bottom_bracket_to_rear_axle_in": 17.83066503520124,
+      "pose_detections": 0
+    },
+    "observed_feedback": {
+      "bike_saddle_to_bar_distance": {
+        "value": "25.7 in",
+        "target": "18-29 in",
+        "status": "OK"
+      },
+      "bike_saddle_to_bar_horizontal_reach": {
+        "value": "25.7 in",
+        "target": "15-26 in",
+        "status": "OK"
+      },
+      "bike_saddle_to_bar_vertical_drop": {
+        "value": "0.6 in",
+        "target": "-2-4 in",
+        "status": "OK"
+      },
+      "bike_saddle_height": {
+        "value": "27.8 in",
+        "target": "24-34 in",
+        "status": "OK"
+      },
+      "bike_wheelbase": {
+        "value": "41.8 in",
+        "target": "36-46 in",
+        "status": "OK"
+      }
+    },
+    "notes": "This is a clean bike-only validation case. It confirms that saved landmarks load, custom 29 in wheel scaling resolves from the largest labeled front_wheel outside-tire detection, bike geometry returns real cm/in values, feedback populates bike landmark rows, and Process/annotate correctly finds no rider."
+  }
+}

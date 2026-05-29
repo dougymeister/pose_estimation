@@ -1,0 +1,263 @@
+{
+  "keypoints": [],
+  "labels": [],
+  "metrics": {
+    "bike_landmarks": {
+      "distances": [
+        {
+          "key": "bike_saddle_to_bar_distance",
+          "name": "bike_saddle_to_bar_distance",
+          "layer": "bike_landmarks",
+          "type": "straight",
+          "points": [
+            "saddle_center",
+            "handlebar_center"
+          ],
+          "landmark_points": [
+            "saddle_center",
+            "handlebar_center"
+          ],
+          "distance_px": 354.04519485512014,
+          "distance_cm": 64.42292057120066,
+          "distance_in": 25.363354555590814,
+          "label": "64.4 cm",
+          "label_px": "354 px",
+          "label_cm": "64.4 cm",
+          "label_in": "25.36 in",
+          "midpoint": [
+            608.0,
+            228.0
+          ],
+          "line_segments": [
+            [
+              432.0,
+              247.0,
+              784.0,
+              209.0
+            ]
+          ],
+          "style": "solid",
+          "color": "#00d4ff",
+          "thickness": 3
+        },
+        {
+          "key": "bike_saddle_to_bar_horizontal_reach",
+          "name": "bike_saddle_to_bar_horizontal_reach",
+          "layer": "bike_landmarks",
+          "type": "horizontal",
+          "points": [
+            "saddle_center",
+            "handlebar_center"
+          ],
+          "landmark_points": [
+            "saddle_center",
+            "handlebar_center"
+          ],
+          "distance_px": 352.0,
+          "distance_cm": 64.05077196526365,
+          "distance_in": 25.21683935640301,
+          "label": "64.1 cm",
+          "label_px": "352 px",
+          "label_cm": "64.1 cm",
+          "label_in": "25.22 in",
+          "midpoint": [
+            608.0,
+            247.0
+          ],
+          "line_segments": [
+            [
+              432.0,
+              247.0,
+              784.0,
+              247.0
+            ]
+          ],
+          "style": "dashed",
+          "color": "#00d4ff",
+          "thickness": 3
+        },
+        {
+          "key": "bike_saddle_to_bar_vertical_drop",
+          "name": "bike_saddle_to_bar_vertical_drop",
+          "layer": "bike_landmarks",
+          "type": "vertical",
+          "points": [
+            "saddle_center",
+            "handlebar_center"
+          ],
+          "landmark_points": [
+            "saddle_center",
+            "handlebar_center"
+          ],
+          "distance_px": 38.0,
+          "distance_cm": 6.91457197352278,
+          "distance_in": 2.7222724305207797,
+          "label": "6.9 cm",
+          "label_px": "38 px",
+          "label_cm": "6.9 cm",
+          "label_in": "2.72 in",
+          "midpoint": [
+            784.0,
+            228.0
+          ],
+          "line_segments": [
+            [
+              784.0,
+              247.0,
+              784.0,
+              209.0
+            ]
+          ],
+          "style": "dashed",
+          "color": "#00d4ff",
+          "thickness": 3
+        },
+        {
+          "key": "bike_saddle_height",
+          "name": "bike_saddle_height",
+          "layer": "bike_landmarks",
+          "type": "straight",
+          "points": [
+            "bottom_bracket",
+            "saddle_center"
+          ],
+          "landmark_points": [
+            "bottom_bracket",
+            "saddle_center"
+          ],
+          "distance_px": 372.24722967404335,
+          "distance_cm": 67.73500688225361,
+          "distance_in": 26.667325544194338,
+          "label": "67.7 cm",
+          "label_px": "372 px",
+          "label_cm": "67.7 cm",
+          "label_in": "26.67 in",
+          "midpoint": [
+            483.0,
+            426.0
+          ],
+          "line_segments": [
+            [
+              534.0,
+              605.0,
+              432.0,
+              247.0
+            ]
+          ],
+          "style": "solid",
+          "color": "#00d4ff",
+          "thickness": 3
+        },
+        {
+          "key": "bike_wheelbase",
+          "name": "bike_wheelbase",
+          "layer": "bike_landmarks",
+          "type": "straight",
+          "points": [
+            "rear_axle",
+            "front_axle"
+          ],
+          "landmark_points": [
+            "rear_axle",
+            "front_axle"
+          ],
+          "distance_px": 595.0075629771441,
+          "distance_cm": 108.2690162893645,
+          "distance_in": 42.625596964316735,
+          "label": "108.3 cm",
+          "label_px": "595 px",
+          "label_cm": "108.3 cm",
+          "label_in": "42.63 in",
+          "midpoint": [
+            598.5,
+            569.5
+          ],
+          "line_segments": [
+            [
+              301.0,
+              571.0,
+              896.0,
+              568.0
+            ]
+          ],
+          "style": "solid",
+          "color": "#00d4ff",
+          "thickness": 3
+        },
+        {
+          "key": "bike_bottom_bracket_to_front_axle",
+          "name": "bike_bottom_bracket_to_front_axle",
+          "layer": "bike_landmarks",
+          "type": "straight",
+          "points": [
+            "bottom_bracket",
+            "front_axle"
+          ],
+          "landmark_points": [
+            "bottom_bracket",
+            "front_axle"
+          ],
+          "distance_px": 363.88597115030416,
+          "distance_cm": 66.21357204405295,
+          "distance_in": 26.068335450414548,
+          "label": "66.2 cm",
+          "label_px": "363 px",
+          "label_cm": "66.2 cm",
+          "label_in": "26.07 in",
+          "midpoint": [
+            715.0,
+            586.5
+          ],
+          "line_segments": [
+            [
+              534.0,
+              605.0,
+              896.0,
+              568.0
+            ]
+          ],
+          "style": "solid",
+          "color": "#00d4ff",
+          "thickness": 3
+        },
+        {
+          "key": "bike_bottom_bracket_to_rear_axle",
+          "name": "bike_bottom_bracket_to_rear_axle",
+          "layer": "bike_landmarks",
+          "type": "straight",
+          "points": [
+            "bottom_bracket",
+            "rear_axle"
+          ],
+          "landmark_points": [
+            "bottom_bracket",
+            "rear_axle"
+          ],
+          "distance_px": 235.46761985462035,
+          "distance_cm": 42.84625802418089,
+          "distance_in": 16.86860552133106,
+          "label": "42.8 cm",
+          "label_px": "235 px",
+          "label_cm": "42.8 cm",
+          "label_in": "16.87 in",
+          "midpoint": [
+            417.5,
+            588.0
+          ],
+          "line_segments": [
+            [
+              534.0,
+              605.0,
+              301.0,
+              571.0
+            ]
+          ],
+          "style": "solid",
+          "color": "#00d4ff",
+          "thickness": 3
+        }
+      ],
+      "angles": []
+    }
+  }
+}

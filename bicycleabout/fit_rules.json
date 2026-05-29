@@ -488,6 +488,147 @@
       }
     },
     "key": "knee_pedal_spindle_offset"
+  },
+  "TREK_54CM_520Disc_19_24000_B_Primary_off_white.jpg": {
+    "scenario": "Bike-only image: Trek 520 Disc 54cm, custom 29 in tire; validates saved landmarks, largest-wheel scale selection, bike geometry, and no-rider behavior",
+    "result": "pass",
+    "wheel_diameter_in": 29.0,
+    "scale_reference": {
+      "reference_object": "front_wheel",
+      "reference_size": 29.0,
+      "reference_unit": "in",
+      "wheel_preset": "custom",
+      "wheel_preset_label": "Custom",
+      "expected_cm_per_px": 0.1471009556875056,
+      "detected_wheel_candidates": [
+        {
+          "label": "front_wheel",
+          "diameter_px": 475.25042724609375
+        },
+        {
+          "label": "undefined",
+          "diameter_px": 499.0169982910156
+        },
+        {
+          "label": "front_wheel",
+          "diameter_px": 500.7445373535156
+        }
+      ],
+      "selected_wheel_label": "front_wheel",
+      "selected_wheel_diameter_px": 500.7445373535156,
+      "scale_selection_reason": "largest labeled front_wheel, assuming outside tire diameter",
+      "scale_selection_confidence": "exact"
+    },
+    "expected": {
+      "workflow": {
+        "load_saved_landmarks": true,
+        "save_scale_reference": true,
+        "analyze_landmarks_returns_200": true,
+        "feedback_returns_200": true,
+        "process_returns_200": true,
+        "pose_detection_expected": false,
+        "no_recalculate_bike_metrics_404": true,
+        "no_null_landmark_measurements": true,
+        "feedback_table_shows_landmark_rows": true,
+        "feedback_table_shows_process_rows": false
+      },
+      "scale_resolution": {
+        "should_find_existing_image_path": true,
+        "should_detect_front_wheel": true,
+        "should_select_largest_labeled_front_wheel": true,
+        "should_ignore_undefined_when_labeled_front_wheel_exists": true,
+        "should_compute_cm_per_px": true,
+        "should_return_real_world_units": true,
+        "must_not_average_multiple_wheel_detections": true,
+        "must_not_return_pixel_only_metrics": true
+      },
+      "person_detection": {
+        "expected_people": 0,
+        "selected_person_index": null
+      },
+      "valid_bike_metrics": [
+        "bike_saddle_to_bar_distance",
+        "bike_saddle_to_bar_horizontal_reach",
+        "bike_saddle_to_bar_vertical_drop",
+        "bike_saddle_height",
+        "bike_wheelbase",
+        "bike_bottom_bracket_to_front_axle",
+        "bike_bottom_bracket_to_rear_axle"
+      ],
+      "not_evaluated_metrics": [
+        "knee_angle_left_11_13_15",
+        "knee_angle_right_12_14_16",
+        "hip_angle_left_5_11_13",
+        "hip_angle_right_6_12_14",
+        "shoulder_angle_left_11_5_7",
+        "shoulder_angle_right_12_6_8",
+        "arm_reach_distance_left_5_9",
+        "arm_reach_distance_right_6_10",
+        "leg_length_left_11_15",
+        "leg_length_right_12_16",
+        "knee_length_left_13_15",
+        "knee_length_right_14_16",
+        "reach_distance_left_5_7",
+        "reach_distance_right_6_8",
+        "kops"
+      ],
+      "expected_bike_feedback_statuses": {
+        "bike_saddle_to_bar_distance": "OK",
+        "bike_saddle_to_bar_horizontal_reach": "OK",
+        "bike_saddle_to_bar_vertical_drop": "OK",
+        "bike_saddle_height": "OK",
+        "bike_wheelbase": "OK"
+      },
+      "metrics_with_no_feedback_rule_yet": [
+        "bike_bottom_bracket_to_front_axle",
+        "bike_bottom_bracket_to_rear_axle"
+      ],
+      "must_not_contain": [
+        "NaN",
+        "undefined°",
+        "null°",
+        "distance_cm: None",
+        "distance_in: None",
+        "legacy bike metric refresh 404",
+        "422 Unprocessable Entity"
+      ]
+    },
+    "observed_values": {
+      "cm_per_px": 0.1471009556875056,
+      "selected_front_wheel_px": 500.7445373535156,
+      "bike_saddle_to_bar_distance_in": 25.662332311713946,
+      "bike_saddle_to_bar_horizontal_reach_in": 25.65579660219094,
+      "bike_bottom_bracket_to_front_axle_in": 24.25197132423469,
+      "bike_bottom_bracket_to_rear_axle_in": 17.830668295239082,
+      "pose_detections": 0
+    },
+    "observed_feedback": {
+      "bike_saddle_to_bar_distance": {
+        "value": "25.7 in",
+        "target": "18-29 in",
+        "status": "OK"
+      },
+      "bike_saddle_to_bar_horizontal_reach": {
+        "value": "25.7 in",
+        "target": "15-26 in",
+        "status": "OK"
+      },
+      "bike_saddle_to_bar_vertical_drop": {
+        "value": "0.6 in",
+        "target": "-2-4 in",
+        "status": "OK"
+      },
+      "bike_saddle_height": {
+        "value": "27.8 in",
+        "target": "24-34 in",
+        "status": "OK"
+      },
+      "bike_wheelbase": {
+        "value": "41.8 in",
+        "target": "36-46 in",
+        "status": "OK"
+      }
+    },
+    "notes": "This validates the revised wheel scale selection logic. Multiple wheel-like detections were found, but the app correctly selected the largest labeled front_wheel instead of averaging detections. The bike-only workflow produced real-world landmark measurements and no rider detections."
   }
 }
-

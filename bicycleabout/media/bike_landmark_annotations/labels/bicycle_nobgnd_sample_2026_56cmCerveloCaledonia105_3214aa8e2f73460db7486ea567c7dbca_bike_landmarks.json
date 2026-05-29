@@ -1,0 +1,54 @@
+{
+  "image": "bicycle_nobgnd_sample_2026_56cmCerveloCaledonia105_3214aa8e2f73460db7486ea567c7dbca.png",
+  "original_filename": "bicycle_nobgnd_sample_2026_56cmCerveloCaledonia105.png",
+  "saved_image": "bike_landmark_annotations/images/bicycle_nobgnd_sample_2026_56cmCerveloCaledonia105_3214aa8e2f73460db7486ea567c7dbca.png",
+  "image_width": 1264,
+  "image_height": 842,
+  "bike_landmarks": {
+    "front_axle": {
+      "x": 997,
+      "y": 585,
+      "visible": true
+    },
+    "rear_axle": {
+      "x": 241,
+      "y": 566,
+      "visible": true
+    },
+    "bottom_bracket": {
+      "x": 545,
+      "y": 626,
+      "visible": true
+    },
+    "saddle_center": {
+      "x": 399,
+      "y": 90,
+      "visible": true
+    },
+    "handlebar_center": {
+      "x": 890,
+      "y": 125,
+      "visible": true
+    },
+    "visible_hood_or_grip": {
+      "x": 1001,
+      "y": 101,
+      "visible": true
+    },
+    "visible_pedal_spindle": {
+      "x": 667,
+      "y": 668,
+      "visible": true
+    }
+  },
+  "scale_reference": {
+    "reference_object": "front_wheel",
+    "reference_size": 27.0,
+    "reference_unit": "in",
+    "cm_per_px": null,
+    "wheel_preset": "custom",
+    "wheel_preset_label": "Custom",
+    "note": "Use actual outside tire diameter for wheel-based scaling."
+  },
+  "saved_at": "2026-05-29T11:57:38.224864+00:00"
+}
