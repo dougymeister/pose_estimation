@@ -13,3 +13,23 @@ dy_nobgnd_20260528_145141.png,30.0,"Bike + rider side image with saved bike land
 dy_straight_centered_20260528_182744.png,30.0,"Bike + rider centered side image; saved bike landmarks; tests scale recalculation consistency","bike_saddle_to_bar_distance,bike_saddle_to_bar_horizontal_reach,bike_saddle_to_bar_vertical_drop,bike_saddle_height,bike_wheelbase,bike_bottom_bracket_to_front_axle,bike_bottom_bracket_to_rear_axle,shoulder_angle,arm_reach_distance,leg_length,knee_length,reach_distance","kops,left_knee_angle_fit_status,right_knee_angle_fit_status,left_hip_angle_fit_status,right_hip_angle_fit_status","Saved bike landmarks should reload. Front wheel scale should resolve to real-world units, not pixel-only. Pose detector should find 1 person. Static rider metrics should compute. Knee/hip/KOPS fit judgments should not be treated as valid because crank position is not in required evaluation window.",review,"Initial bike-geometry pass showed cm_per_px=None and feedback returned empty because distances were pixel-only. Later annotate computed cm_per_px=0.2192258984 and real bike metrics were generated. KOPS crank_angle_deg=17.97 and KOPS valid=False. This image should catch scale-not-ready and legacy bike metric refresh 404 behavior."
 dybike_good_download.jpg,27.0,"Bike + rider image; 700C road tire; validates saved landmarks, scale conversion, Analyze Landmarks, Process, and merged feedback","bike_landmarks,knee_angle,hip_angle,shoulder_angle,arm_reach_distance,leg_length,knee_length,reach_distance,kops","knee_angle_fit_status_when_crank_invalid,hip_angle_fit_status_when_crank_invalid","Analyze Landmarks computes real cm/in landmark metrics. Process detects one rider and computes pose metrics. Feedback table displays both Landmark and Process rows.",pass,"Remaining improvement: add crank-position validity guard so knee/hip fit feedback is not judged as Too Low/Too High unless the pedal/crank position is appropriate for that metric."
 TREK_54CM_520Disc_19_24000_B_Primary_off_white.jpg,29.0,"Bike-only image: Trek 520 Disc 54cm; custom 29 in tire; validates largest labeled front_wheel scale selection","bike_saddle_to_bar_distance,bike_saddle_to_bar_horizontal_reach,bike_saddle_to_bar_vertical_drop,bike_saddle_height,bike_wheelbase,bike_bottom_bracket_to_front_axle,bike_bottom_bracket_to_rear_axle","knee_angle,hip_angle,shoulder_angle,arm_reach_distance,leg_length,knee_length,reach_distance,kops","Saved bike landmarks should load. Scale should use custom 29.0 in front_wheel. If multiple front_wheel detections exist, app should select the largest labeled front_wheel and ignore undefined detections. Analyze Landmarks should compute real cm/in values. Process should return no rider detections.",pass,"Selected front_wheel diameter 500.7445 px, cm_per_px=0.1471009557. Feedback expected OK for saddle-to-bar distance, horizontal reach, vertical drop, saddle height, and wheelbase. No pose/person detections expected."
+
+
+
+2 baseline cases:
+dybike_good_download.jpg
+Bike + rider, 700C road 27 in
+
+TREK_54CM_520Disc_19_24000_B_Primary_off_white.jpg
+Bike only, custom 29 in
+
+
+Validation checklist
+Load image
+Confirm wheel diameter
+Save Bike Landmarks
+Analyze Landmarks
+Process
+Confirm feedback rows
+Confirm no 404 / 422 / null / NaN
+

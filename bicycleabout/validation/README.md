@@ -1,5 +1,10 @@
 Validation Notes
 
+validation_notes.csv      Human-readable test checklist/results
+expected_results.json     Machine-readable expected values/statuses
+README_validation.md      How to run the validation manually
+
+
 6 images used in validation
 - folder C:\development\Python\projects\pose_estimation\PoseEstimation\bicycleabout\validation\images
 - no background

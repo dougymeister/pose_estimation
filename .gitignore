@@ -19,6 +19,11 @@ src/*.csv
 src/*.mp4
 src/*.png
 
+doug_setup_steps/
+*.pem
+*accessKeys*.csv
+*.pt
+
 # Local experiment / old deployment folders
 fastapi-aws-deployment/
 getimages/
